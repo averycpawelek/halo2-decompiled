@@ -332,9 +332,15 @@ void __stdcall function_b5a70(long player_index, long type, long count, long obj
     }
 }
 
-// score 79 (was 79): retail passes the first parameter in EAX with six stack
-// arguments and returns with ret 0x18, but the callers in
-// src/unknown_0a7c50.cpp declare this __stdcall with seven stack arguments.
+// score 79 (was 79): the convention already matches (player in eax, ret 0x18), but ours
+// computes has_player (setne) and the player slot at entry and keeps the world in ebx;
+// retail copies the player to ebx, tests it and masks it only at the use, keeps the world
+// in eax and the state in edi, and tests the count again after the loop (a for loop).
+// Tried: a for loop (101); a for loop without player_slot (101, retail's registers apart
+// from setne); both locals dropped (122; 119 with a for loop: LTCG then passes the count
+// in ebx and the player on the stack); only has_player dropped (90, same flip); a local
+// copy of the player (119); both dropped with the count read through its address as in
+// 0xb5a70 (113: the player still goes on the stack).
 // @retail 0xb5ba0
 void __stdcall function_b5ba0(long player_index, long type, long count, long object_indices,
     long size, void const *data, long timeout)

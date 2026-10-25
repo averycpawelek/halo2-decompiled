@@ -502,10 +502,13 @@ struct s_text_line_measurement
 	long index;
 };
 
-// @retail 0x13ef40
 // score 77 (was 77): retail loads the width into xmm4 before the multiply
 // chain and accumulates the four terms in xmm3; ours reloads the width into
-// xmm3 after the multiplies and accumulates in xmm0
+// xmm3 after the multiplies and accumulates in xmm0 (register allocation only).
+// Tried (77, same code): the test written as sum < x1; width += advance + offset + kerning;
+// a copy of the width taken after the kerning call. Worse: advance or offset written
+// inline at both uses (111), the can_break block ahead of offset/advance (111).
+// @retail 0x13ef40
 s_text_line_measurement function_13ef40(s_text_iterator *iterator, point2f const *position, box2f const *bounds, real scale)
 {
 	long index = 0;

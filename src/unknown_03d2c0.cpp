@@ -129,10 +129,14 @@ s_lighting_record *function_3db00(long object_index, real priority)
     function_d4080(*(short *)definition, &query, &g_55ee60, special);
     return &g_55ee60;
 }
-// @retail 0x3ddd0
 // score 77 (was 77): retail keeps the result in esi and tests it before the
 // reload, ours copies it into eax at the merge point and puts the cold "no
 // result" return block ahead of the initialization instead of after it
+// (retail returns it with mov eax, esi; ours folds it to the constant).
+// Tried: return NONE (77); the NONE test after the inner if (77); no early return (161);
+// "if (result != NONE) initialize = true; else return" (83); one variable for the
+// allocation and the result (141); result = cache_index at its declaration (148).
+// @retail 0x3ddd0
 long __stdcall function_3ddd0(long object_index)
 {
     byte *object = ((s_3dd10_object_header *)g_4e0300->data)[object_index & 0xffff].object;

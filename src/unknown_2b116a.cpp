@@ -298,7 +298,7 @@ void __stdcall function_2b0565(c_class_2b01eb *widget, long frame)
     bool show_label = g_54d59f && widget->has_screen() && widget->v11() != 6;
     if (*(long *)((byte *)widget->definition + 0x1c) != NONE)
     {
-        short mode = 0;
+        long mode = 0;
         dword color = bitmap_channel_round_2b(alpha * 255.0f);
         color = (color << 8) | bitmap_channel_round_2b(widget->color.red * 255.0f);
         color = (color << 8) | bitmap_channel_round_2b(widget->color.green * 255.0f);
@@ -310,12 +310,19 @@ void __stdcall function_2b0565(c_class_2b01eb *widget, long frame)
         source.y1 = (real)bitmap->height;
         s_float_rect rectangle;
         function_22ea81(widget, &rectangle, (short_rectangle2d const *)frame);
-        rectangle.x0 += x;
-        rectangle.x1 += x;
-        rectangle.y0 -= y;
-        rectangle.y1 -= y;
-        if (*(short *)((byte *)widget->definition + 8) == 1)
+        real offset_y = (real)-y;
+        real offset_x = (real)x;
+        rectangle.x0 += offset_x;
+        rectangle.y0 += offset_y;
+        rectangle.x1 += offset_x;
+        rectangle.y1 += offset_y;
+        /* a switch, not an if: retail sign-extends the field and decrements it (an if scores 109) */
+        switch (*(short *)((byte *)widget->definition + 8))
+        {
+        case 1:
             mode = 1;
+            break;
+        }
         if (*(real *)((byte *)widget->definition + 0x10) == 0.0f &&
             *(real *)((byte *)widget->definition + 0x14) == 0.0f)
         {
@@ -4455,6 +4462,13 @@ bool __stdcall function_2b278e(long controller_index)
 	return true;
 }
 
+// score 54 (was 56): only case 3 differs. Retail keeps controller in esi, spills controller_index
+// to [ebp+8] and reads (*controller)->controller_index again for the dialog masks after
+// function_1a334a. Our build reuses the index loaded before player_slot_get_identity: LTCG here
+// treats function_1a334a as writing no memory (an impure call placed after it gives retail's
+// registers exactly), so the cause is outside this function. Tried: bool member (199: 8 bytes
+// shorter, though closer by align.py), no controller_index local (199), long volatile
+// controller_index (188). Case 2's count = 0 first: 56 -> 54.
 // @retail 0x2b24ff
 void c_clan_options_list::handle_item(s_controller_reference **controller, long *item)
 {
@@ -4484,10 +4498,10 @@ void c_clan_options_list::handle_item(s_controller_reference **controller, long 
 				{
 					break;
 				}
+				count = 0;
 				iterator.iterator.data = source;
 				iterator.iterator.index = NONE;
 				iterator.iterator.datum_index = NONE;
-				count = 0;
 				while (count < entry_count)
 				{
 					s_online_member *member;
@@ -4581,6 +4595,8 @@ void c_clan_options_list::handle_item(s_controller_reference **controller, long 
 
 			if (player_slot_get_identity(controller_index, &identity))
 			{
+				/* volatile: stored to the stack slot where retail spills
+				   controller_index, which keeps the function within a byte of retail's length (see the score note) */
 				long volatile member = function_1a334a(controller_index, (_XUID const *)&identity);
 
 				if (identity.type != 1 && member)
@@ -4624,7 +4640,6 @@ void c_friends_options_list::handle_item(s_controller_reference **controller, lo
 			s_screen_parameters parameters;
 			s_list_item_iterator iterator;
 			long count;
-			long entry_offset;
 			parameters.field_c = 0;
 			if (source && source->actual_count > 0)
 			{
@@ -4636,25 +4651,21 @@ void c_friends_options_list::handle_item(s_controller_reference **controller, lo
 				iterator.iterator.index = NONE;
 				iterator.iterator.datum_index = NONE;
 				count = 0;
-				if (count < entry_count)
+				while (count < entry_count)
 				{
-					entry_offset = 0;
-					do
-					{
-						s_online_member *member;
+					s_online_member *member;
 
-						if (!function_2b2327(&iterator))
-						{
-							break;
-						}
-						member = (s_online_member *)iterator.item;
-						if (member->recipient.xuid && !function_19acc6((_XUID const *)&member->recipient.xuid) && !(member->flags & 0x30) && (member->flags & 1))
-						{
-							++count;
-							*(s_message_recipient *)((byte *)entries + entry_offset) = member->recipient;
-							entry_offset += sizeof(s_message_recipient);
-						}
-					} while (count < entry_count);
+					if (!function_2b2327(&iterator))
+					{
+						break;
+					}
+					member = (s_online_member *)iterator.item;
+					if (member->recipient.xuid && !function_19acc6((_XUID const *)&member->recipient.xuid) && !(member->flags & 0x30) && (member->flags & 1))
+					{
+						s_message_recipient *recipient = &((s_message_recipient *)entries)[count];
+						++count;
+						*recipient = member->recipient;
+					}
 				}
 				if (count > 0)
 				{
@@ -4670,10 +4681,16 @@ void c_friends_options_list::handle_item(s_controller_reference **controller, lo
 						screen->recipients = recipients;
 						screen->recipient_count = count;
 					}
-					break;
+				}
+				else
+				{
+					function_236299(2);
 				}
 			}
-			function_236299(2);
+			else
+			{
+				function_236299(2);
+			}
 			break;
 		}
 		case 1:
@@ -4681,14 +4698,12 @@ void c_friends_options_list::handle_item(s_controller_reference **controller, lo
 			s_screen_parameters parameters;
 			s_list_item_iterator iterator;
 			long count;
-			long entry_offset;
 			parameters.field_c = 0;
 			if (source && source->actual_count > 0)
 			{
 				iterator.iterator.index = NONE;
 				iterator.iterator.datum_index = NONE;
 				count = 0;
-				entry_offset = 0;
 				iterator.iterator.data = source;
 				while (count < entry_count)
 				{
@@ -4701,9 +4716,9 @@ void c_friends_options_list::handle_item(s_controller_reference **controller, lo
 					member = (s_online_member *)iterator.item;
 					if (member->recipient.xuid && !(member->flags & 0x30))
 					{
+						s_message_recipient *recipient = &((s_message_recipient *)entries)[count];
 						++count;
-						*(s_message_recipient *)((byte *)entries + entry_offset) = member->recipient;
-						entry_offset += sizeof(s_message_recipient);
+						*recipient = member->recipient;
 					}
 				}
 				if (count > 0)
@@ -4721,9 +4736,11 @@ void c_friends_options_list::handle_item(s_controller_reference **controller, lo
 						screen->recipient_count = count;
 					}
 				}
-				break;
 			}
-			function_236299(2);
+			else
+			{
+				function_236299(2);
+			}
 			break;
 		}
 		case 3:

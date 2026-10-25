@@ -102,6 +102,13 @@ struct s_handler_slot
 
 // score 67 (was 67): retail keeps the node pointer in eax and adds 0xc to it before the
 // compare, ours copies it into ecx and reads [eax+0xc] instead.
+// everything before the handler block matches. In the handler and gateway
+// blocks retail keeps the tested-and-cleared fields as pointers (handler copied to edx,
+// eax += 0xc for &handler->gateway; gateway copied to esi, lea edx [eax+4] for
+// &gateway->initialized, eax += 8 for &gateway->link); ours stores through [eax+N].
+// Tried (all 67): pointer-to-field locals (s_gateway_slot **), static dispose helpers,
+// inline member dispose() on both slots, static detach helpers taking T **, reading the
+// globals again inside the tests; volatile initialized/back-pointer fields 65 (other shape).
 // @retail 0x8dd70
 void function_8dd70(void)
 {
