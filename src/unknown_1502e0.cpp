@@ -227,6 +227,9 @@ void function_151ea0(long player_index, long object_index)
 // the else returning false or result itself (67, 67), the copy after the test or at the end
 // (67, 68, 69), early returns (69), no else (80), deciding the result then copying when it is
 // set (69-82), the copy written out twice (76-86); 150 permuter variants, best 1.
+// Also: the file's sibling shape (result set true only, no else) 80, the not-equal test returning
+// result or false early 69, no result variable 69, one || condition with the measurements as a
+// comma expression 80.
 // @retail 0x151320
 bool function_151320(s_target_candidate *candidate, s_target_candidate *best, long player_index)
 {
