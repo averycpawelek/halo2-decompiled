@@ -221,6 +221,12 @@ void function_151ea0(long player_index, long object_index)
 	}
 }
 
+// score 1 (was 1): at the not-equal priority test, retail jumps to the epilogue after the copy
+// (al is still 0 there) and ours to the one after the else; both return false. Tried: the
+// priority tests as else-if (1), a done label (1), the else first with a negated test (12),
+// the else returning false or result itself (67, 67), the copy after the test or at the end
+// (67, 68, 69), early returns (69), no else (80), deciding the result then copying when it is
+// set (69-82), the copy written out twice (76-86); 150 permuter variants, best 1.
 // @retail 0x151320
 bool function_151320(s_target_candidate *candidate, s_target_candidate *best, long player_index)
 {
