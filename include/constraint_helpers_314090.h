@@ -89,18 +89,30 @@ struct s_1d1870
 };
 class hkEntity;
 class shape_bounds_314650;
-// Its vector fields make it 16-byte aligned, which is why the game's 0x1d1540
-// allocates 0x70 bytes for the eight-byte subclass c_1d19d0.
-class c_314710 : public c_a
+// This counted layer initializes +6 before the concrete type installs its
+// table. c_a supplies the registry virtuals and the allocation-size word.
+class motion_reference_314710 : public c_a
 {
 public:
+	motion_reference_314710() { unknown06 = 1; }
+};
+// Its vector fields make it 16-byte aligned, which is why the game's 0x1d1540
+// allocates 0x70 bytes for the eight-byte subclass c_1d19d0.
+// Retail table 0x414abc has the five registry slots, two motion tests, and kind.
+class c_314710 : public motion_reference_314710
+{
+public:
+	REFERENCED_NEW_2D88A0(0x26)
 	float radius_squared;
 	byte unknown0c[4];
 	__m128 position_a, rotation_a, position_b, rotation_b;
 	float distance_a, angle_a, distance_b, angle_b;
 	c_314710(hkEntity *entity);
-	s_1d1870 function_3144b0(void *body);
-	s_1d1870 function_314580(void *body);
+	c_314710(s_314320 const *description);
+	virtual void *v3();
+	virtual s_1d1870 function_3144b0(void *body);
+	virtual s_1d1870 function_314580(void *body);
+	virtual long kind() { return 2; }
 	float update_radius_squared(shape_bounds_314650 const *shape);
 	void export_description(s_314320 *description) const;
 	void import_description(s_314320 const *description);
