@@ -66,7 +66,7 @@ def test_contact_storage_growth_and_reuse(solver_images):
                 heap = bytearray(execute(uc, va if original else address(symbols, names[va]), heap, args, OBJECT, hooks))
                 normalized = bytearray(heap)
                 if va == 0x315510:
-                    tables = [(0, 'c_b', 0x452c30), (8, 'lane_a_constraint_interface', 0x415340)]
+                    tables = [(0, 'c_sized_reference', 0x452c30), (8, 'lane_a_constraint_interface', 0x415340)]
                 else:
                     tables = [(0, 'contact_default_31c000', 0x4153c8), (8, 'contact_default_31c000', 0x4153b8)]
                 for offset, name, table in tables:

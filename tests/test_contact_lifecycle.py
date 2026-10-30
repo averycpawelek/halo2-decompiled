@@ -30,7 +30,7 @@ def normalize_table(data, offset, original, symbols, class_name, retail_value):
     if original:
         assert value == retail_value
     else:
-        suffix = {0x4153c8: '6Bc_a@@@', 0x4153b8: '6Blane_a_constraint_interface@@@'}.get(retail_value, '')
+        suffix = {0x4153c8: '6Bconstraint_reference_31b9e0@@@', 0x4153b8: '6Blane_a_constraint_interface@@@'}.get(retail_value, '')
         tables = {s.va for s in symbols.symbols if s.name.startswith('??_7' + class_name + '@@')
                   and (not suffix or s.name.endswith(suffix))}
         assert value in tables, (class_name, hex(value), tables)
@@ -211,7 +211,7 @@ def test_construct_destroy_roundtrip(solver_images):
                                   [WORLD, first, second], OBJECT, hooks)
             result = bytearray(execute(uc, 0x3190a0 if original else destructor, constructed, [], OBJECT, hooks))
             normalize_table(result, OBJECT - HEAP, original, symbols, 'referenced_2d88a0', 0x452c30)
-            normalize_table(result, OBJECT - HEAP + 0x10, original, symbols, 'c_b', 0x452c30)
+            normalize_table(result, OBJECT - HEAP + 0x10, original, symbols, 'c_sized_reference', 0x452c30)
             normalize_table(result, OBJECT - HEAP + 0x18, original, symbols, 'lane_a_constraint_interface', 0x415340)
             assert result[A - HEAP + 6:A - HEAP + 8] == data[A - HEAP + 6:A - HEAP + 8]
             assert result[B - HEAP + 6:B - HEAP + 8] == data[B - HEAP + 6:B - HEAP + 8]

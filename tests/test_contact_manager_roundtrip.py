@@ -158,7 +158,7 @@ def test_constructed_contact_manager_interface(solver_images, precision):
                           (0x10, 'contact_default_31c000', 0x4153c8),
                           (0x18, 'contact_default_31c000', 0x4153b8)]
                 if destroyed:
-                    tables = [(0, 'referenced_2d88a0', 0x452c30), (0x10, 'c_b', 0x452c30),
+                    tables = [(0, 'referenced_2d88a0', 0x452c30), (0x10, 'c_sized_reference', 0x452c30),
                               (0x18, 'lane_a_constraint_interface', 0x415340)]
                 for offset, name, table in tables:
                     normalize_table(normalized, MANAGER - HEAP + offset, original, symbols, name, table)
