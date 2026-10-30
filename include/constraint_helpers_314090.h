@@ -1,6 +1,7 @@
 #ifndef CONSTRAINT_HELPERS_314090_H
 #define CONSTRAINT_HELPERS_314090_H
 #include "lane_b_constraint_dependencies.h"
+#include "unknown_0a9f20.h"
 
 // Description layouts follow the retail constructors and import/export copies.
 // The base occupies twelve bytes, followed by aligned vector fields.
@@ -89,12 +90,16 @@ struct s_1d1870
 };
 class hkEntity;
 class shape_bounds_314650;
-// This counted layer initializes +6 before the concrete type installs its
-// table. c_a supplies the registry virtuals and the allocation-size word.
-class motion_reference_314710 : public c_a
+// The counted reference owns the shared out-of-line registry teardown.
+// These slots reuse the existing registry operations on the common prefix.
+class __declspec(novtable) motion_reference_314710 : public c_reference_a9f20
 {
 public:
-	motion_reference_314710() { unknown06 = 1; }
+ virtual unsigned int v1(char *buffer, unsigned int size)
+ { return ((c_a *)this)->c_a::v1(buffer, size); }
+ virtual void v2(char const *name) { ((c_a *)this)->c_a::v2(name); }
+ virtual void *v3() { return &g_480120; }
+ virtual void v4(dword unused) {}
 };
 // Its vector fields make it 16-byte aligned, which is why the game's 0x1d1540
 // allocates 0x70 bytes for the eight-byte subclass c_1d19d0.

@@ -10,8 +10,7 @@ motion_registration_314370 g_4806f8;
 // @retail 0x314370
 void *c_314710::v3() { return &g_4806f8; }
 
-// Score 1: the generated deleting destructor calls the existing c_a-based
-// destruction chain rather than retail's shared 0xdc370 wrapper.
+// Destruction uses the shared reference teardown before freeing tag 0x26.
 // @retail 0x3146e0 deleting c_314710
 
 // Start both displacement histories outside the normal range and both
