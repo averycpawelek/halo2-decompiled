@@ -9,19 +9,26 @@ static __forceinline __m128 scale_joint_axis(float factor, __m128 const &axis)
 }
 
 // The unordered case follows retail into normalization, as does equality.
-// Remaining byte differences are the scalar temporaries' stack locations.
+// Remaining byte differences are the reciprocal temporaries' stack locations.
 // @retail 0x312e00
 void lane_a_ragdoll::build_swing_limits(__m128 const &twist, __m128 const &cone, __m128 const &plane,
 	lane_a_solver_input const *input, lane_a_solver_output *output) const
 {
+	struct scalar_workspace
+	{
+		float norm;
+		float cone_error;
+		float plane_error;
+	} scalars;
 	{
 		__m128 axis = joint_cross(twist, cone);
-		float norm = joint_dot(axis, axis);
-		if (!(norm < 1.1920928955078125e-7f))
+		_mm_store_ss(&scalars.norm, joint_sum_three(_mm_mul_ps(axis, axis)));
+		if (!(scalars.norm < 1.1920928955078125e-7f))
 		{
-			float inverse = 1.0f / sqrtf(norm);
+			float inverse = 1.0f / sqrtf(scalars.norm);
 			solver_angular_range_31f000 range;
-			range.error = joint_dot(twist, cone);
+			_mm_store_ss(&scalars.cone_error, joint_sum_three(_mm_mul_ps(twist, cone)));
+			range.error = scalars.cone_error;
 			range.minimum = cone_limit;
 			range.maximum = 100.0f;
 			range.axis = scale_joint_axis(inverse, axis);
@@ -30,12 +37,13 @@ void lane_a_ragdoll::build_swing_limits(__m128 const &twist, __m128 const &cone,
 	}
 	{
 		__m128 axis = joint_cross(twist, plane);
-		float norm = joint_dot(axis, axis);
-		if (!(norm < 1.1920928955078125e-7f))
+		_mm_store_ss(&scalars.norm, joint_sum_three(_mm_mul_ps(axis, axis)));
+		if (!(scalars.norm < 1.1920928955078125e-7f))
 		{
-			float inverse = 1.0f / sqrtf(norm);
+			float inverse = 1.0f / sqrtf(scalars.norm);
 			solver_angular_range_31f000 range;
-			range.error = joint_dot(twist, plane);
+			_mm_store_ss(&scalars.plane_error, joint_sum_three(_mm_mul_ps(twist, plane)));
+			range.error = scalars.plane_error;
 			range.minimum = plane_low;
 			range.maximum = plane_high;
 			range.axis = scale_joint_axis(inverse, axis);
