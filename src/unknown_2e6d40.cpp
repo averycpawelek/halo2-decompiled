@@ -4,6 +4,8 @@
 // found overlapping is the shape inside queried, its agent made when first
 // needed and dropped when the volume stops overlapping. The kind used with
 // the two bodies the other way round turns what it finds back.
+// Child-agent lifetime follows the bounding query: create on entry, reuse
+// while overlapping, and release when the bounding query stops reporting hits.
 #include "lane_b_bv_agents.h"
 
 static __declspec(align(16)) const unsigned long g_4124a0[4] = {0x80000000, 0x80000000, 0x80000000, 0x80000000};
