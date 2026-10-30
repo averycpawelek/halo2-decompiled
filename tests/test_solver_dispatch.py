@@ -294,6 +294,19 @@ def test_nonfinite_and_zero_rows(solver_images, precision):
 
 
 @pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
+def test_step_scale_edge_values(solver_images, precision):
+    # Seed 2 emits no temporary-scale override, so every operation consumes
+    # the selected field directly. Keep one iteration to isolate that read.
+    for kind in OP_LAYOUT:
+        for offset in (4, 8, 12):
+            for value in (0.0, -0.0, 1e-30, -0.5, math.inf, math.nan):
+                data = solver_case(kind, 2)
+                put(data, STEP + 0x1c, 'i', 1)
+                put(data, STEP + offset, 'f', value)
+                compare_case(solver_images, data, precision, ('step scale', kind, offset, value))
+
+
+@pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
 def test_retail_builder_streams(solver_images, precision):
     retail, _, _ = solver_images
     for builder in BUILDER_NAMES:

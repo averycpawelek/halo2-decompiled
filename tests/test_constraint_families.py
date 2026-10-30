@@ -123,7 +123,8 @@ def test_velocity_bias_callback_against_retail(solver_images):
 
 
 @pytest.mark.parametrize('va,name', [(0x315340, 'function_315340'), (0x3153c0, 'function_3153c0')])
-def test_modifier_installation_against_retail(solver_images, va, name):
+@pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
+def test_modifier_installation_against_retail(solver_images, va, name, precision):
     retail, compiled, symbols = solver_images
     compiled_va = address(symbols, name)
     for seed in range(64):
@@ -149,11 +150,29 @@ def test_modifier_installation_against_retail(solver_images, va, name):
             def owner_add(machine, address_, size, user):
                 sp = machine.reg_read(UC_X86_REG_ESP)
                 receiver, sizes = words(machine, sp + 4, 2)
+                assert words(machine, receiver, 1) == (TABLE,)
+                expected_scales = ((scale_a, scale_b) if body == ENTITY_A else (scale_b, scale_a))
+                expected_values = (expected_scales if va == 0x315340 else
+                                   (TERMS, 0xbf800000 if body == ENTITY_A else 0x3f800000))
+                assert words(machine, receiver + 0x40, 2) == expected_values
                 calls.append((machine.reg_read(UC_X86_REG_ECX), receiver,
                               bytes(machine.mem_read(sizes, 16)), bytes(machine.mem_read(receiver + 0x40, 8))))
+                # Publishing the replacement table must observe the owner callback.
+                if seed & 4:
+                    global_va = (0x480770 if va == 0x315340 else 0x480880) if original else address(
+                        symbols, 'g_480770' if va == 0x315340 else 'g_480880')
+                    machine.mem_write(global_va, struct.pack('<I', TABLE + 0x400))
+                for reg in [UC_X86_REG_EAX, UC_X86_REG_ECX, UC_X86_REG_EDX]:
+                    machine.reg_write(reg, 0x76543210)
                 return_from_hook(machine, 8)
 
-            result = execute(uc, entry, data, args, hooks=[(CALLBACK, owner_add)])
+            result = execute(uc, entry, data, args, hooks=[(CALLBACK, owner_add)], precision=precision)
+            if seed % 3:
+                table = TABLE + (0x400 if seed & 4 else 0x200 if va == 0x315340 else 0x300)
+                assert words(uc, contact, 1) == (table,)
+            # Once its table changes, installing the same modifier again does nothing.
+            repeat = execute(uc, entry, result, args, hooks=[(CALLBACK, owner_add)], precision=precision)
+            assert repeat == result
             results.append((result, calls))
         assert results[0] == results[1], (name, seed)
         assert len(results[0][1]) == int(seed % 3 != 0)

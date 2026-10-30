@@ -6,28 +6,57 @@ void *g_480990;
 void *g_480770;
 void *g_480880;
 
-// Score 38: scalar home-slot copies and zero-store scheduling differ.
-// Keep bit-preserving copies here, including NaN payloads and signed zero.
+static __forceinline unsigned long modifier_scale_bits(float const &value)
+{
+	unsigned long bits;
+	memcpy(&bits, &value, sizeof(bits));
+	return bits;
+}
+
+static __forceinline void install_mass_scales(contact_modifier_view_315340 *contact,
+	unsigned long a, unsigned long const &b)
+{
+	// Retail copies integer words through the scalar parameters' home slots.
+	// Keep those reads explicit without sending NaN payloads through x87.
+	*(unsigned long *)&contact->value.scale_a = *(unsigned long const volatile *)&a;
+	lane_b_constraint_sizes sizes;
+	sizes.total = 0;
+	sizes.term_bytes = 0;
+	sizes.results = 0;
+	*(unsigned long *)&contact->scale_b = *(unsigned long const volatile *)&b;
+	sizes.op_bytes = 0x88;
+	contact->owner->add((lane_b_contact_constraint_prefix *)contact, &sizes);
+	contact->table = g_480770;
+}
+
+// Score 15 (was 38): scalar home-slot copies and store scheduling still differ.
 // @retail 0x315340
 void __cdecl function_315340(void *manager, hkEntity *first, hkEntity *second, float scale_first, float scale_second)
 {
 	contact_modifier_view_315340 *contact = (contact_modifier_view_315340 *)((unsigned char *)manager + 0x10);
 	if (contact->table == g_480990)
 	{
-		float a, b;
-		if (first == contact->body_a) { a = scale_first; b = scale_second; }
-		else { a = scale_second; b = scale_first; }
-		memcpy(&contact->value.scale_a, &a, sizeof(a));
-		memcpy(&contact->scale_b, &b, sizeof(b));
-		lane_b_constraint_sizes sizes = {0};
-		sizes.op_bytes = 0x88;
-		contact->owner->add((lane_b_contact_constraint_prefix *)contact, &sizes);
-		contact->table = g_480770;
+		unsigned long a, b;
+		if (first == contact->body_a)
+		{
+			a = modifier_scale_bits(scale_first);
+			b = modifier_scale_bits(scale_second);
+		}
+		else
+		{
+			a = modifier_scale_bits(scale_second);
+			b = modifier_scale_bits(scale_first);
+		}
+		install_mass_scales(contact, a, b);
 	}
 }
 
-// Score 24: retail spills the selected sign before copying its bits to +0x44;
-// this build stores it directly. Owner accounting and table replacement agree.
+static __forceinline void store_modifier_sign(float *out, float value)
+{
+	// The selected sign is spilled to its parameter slot, then copied as a word.
+	*(unsigned long *)out = *(unsigned long const volatile *)&value;
+}
+
 // @retail 0x3153c0
 void __cdecl function_3153c0(void *manager, void *body, void const *velocity)
 {
@@ -36,9 +65,12 @@ void __cdecl function_3153c0(void *manager, void *body, void const *velocity)
 	if (contact->body_a == body) sign = -1.0f;
 	if (contact->table == g_480990)
 	{
-		contact->scale_b = sign;
 		contact->value.velocity = velocity;
-		lane_b_constraint_sizes sizes = {0};
+		store_modifier_sign(&contact->scale_b, sign);
+		lane_b_constraint_sizes sizes;
+		sizes.total = 0;
+		sizes.term_bytes = 0;
+		sizes.results = 0;
 		sizes.op_bytes = 0x28;
 		contact->owner->add((lane_b_contact_constraint_prefix *)contact, &sizes);
 		contact->table = g_480880;
