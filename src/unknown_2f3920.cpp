@@ -3,6 +3,7 @@
 // (as a free function and as a method), and whether they overlap: the closest
 // points of their segments, in the world, against the sum of their radii. The
 // queries are marked in the timing stream.
+// Both contact entry points share the segment-distance and fallback-normal path.
 #include "timer_mark_2ebc80.h"
 #include <math.h>
 #include <xmmintrin.h>
