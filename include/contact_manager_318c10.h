@@ -3,6 +3,7 @@
 #include "lane_a_contact_manager.h"
 #include "lane_b_constraint_leaves.h"
 #include "contact_constraint_315510.h"
+#include "contact_storage_318f10.h"
 
 class hkBool
 {
@@ -31,5 +32,13 @@ public:
 	virtual unsigned short add(lane_a_contact_body const *, lane_a_contact_body const *,
 		void const *, lane_b_contact_point const *);
 	virtual void remove(unsigned short id);
+	virtual void processed(lane_a_contact_body const *, lane_a_contact_body const *, void const *, void const *);
+	virtual void cleanup() { delete this; }
+	virtual s_contact_property_318f30 *property(unsigned short id)
+	{ return ((s_contact_storage_318f10 *)this)->property(id); }
+	virtual s_contact_point_318f10 *point(unsigned short id)
+	{ return ((s_contact_storage_318f10 *)this)->point(id); }
+	virtual void collect(array_2d91d0 *out) const
+	{ ((s_contact_storage_318f10 const *)this)->collect(out); }
 };
 #endif
