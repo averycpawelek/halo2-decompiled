@@ -166,7 +166,8 @@ __forceinline void capsule_contact_2f3920(void const *a, void const *b, void con
 	int const clamped = function_308590(&ends_a[0], &direction_a, &ends_b[0], &direction_b, &closest);
 	float const radius = capsule_a->radius + capsule_b->radius;
 	float const reach = radius + ((input_2f3920 const *)input)->tolerance;
-	if (closest.distance_squared <= reach * reach)
+	// Retail rejects ordered separation; an unordered comparison continues.
+	if (!(closest.distance_squared > reach * reach))
 	{
 		float const distance = (float)sqrt(closest.distance_squared);
 		if (clamped == 0)
