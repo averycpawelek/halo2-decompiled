@@ -31,6 +31,8 @@ struct c_component_joint_snapshot_5 : lane_b_rigid_constraint_description
 class lane_a_ball_socket : public lane_b_rigid_constraint
 {
 public:
+	lane_a_ball_socket(c_component_joint_snapshot_4 const *description);
+	virtual void *v3();
 	__m128 pivot_a, pivot_b;
 	lane_a_solver_result results[3];
 	virtual lane_a_solver_result *runtime();
@@ -45,6 +47,8 @@ public:
 class lane_a_spring : public lane_b_rigid_constraint
 {
 public:
+	lane_a_spring(c_component_joint_snapshot_3 const *description);
+	virtual void *v3();
 	__m128 pivot_a, pivot_b;
 	float length;
 	lane_a_solver_result results[1];
@@ -60,6 +64,8 @@ public:
 class lane_a_prismatic : public lane_b_rigid_constraint
 {
 public:
+	lane_a_prismatic(c_component_joint_snapshot_5 const *description);
+	virtual void *v3();
 	__m128 pivot_a, pivot_b, axis_a, axis_b, perpendicular_b;
 	__m128 frame_b[3];
 	float minimum, maximum, friction;
@@ -122,12 +128,5 @@ public:
 	void export_description(s_314320 *description) const;
 	void import_description(s_314320 const *description);
 };
-struct contact_sizes_3155f0 : lane_b_contact_constraint_prefix
-{
-	void get_sizes(lane_b_constraint_sizes *sizes);
-};
-struct contact_sizes_315720 : lane_b_contact_constraint_prefix
-{
-	void get_sizes(lane_b_constraint_sizes *sizes);
-};
+#include "contact_constraint_315510.h"
 #endif

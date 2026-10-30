@@ -306,14 +306,16 @@ float c_314710::update_radius_squared(shape_bounds_314650 const *shape)
 	return radius_squared;
 }
 // @retail 0x3155f0
-void contact_sizes_3155f0::get_sizes(lane_b_constraint_sizes *sizes)
+void contact_sizes_3155f0::info(lane_a_constraint_info *output) const
 {
-	lane_b_contact_constraint_prefix::get_sizes(sizes);
+	lane_b_constraint_sizes *sizes = (lane_b_constraint_sizes *)output;
+	((lane_b_contact_constraint_prefix *)this)->get_sizes(sizes);
 	sizes->op_bytes += 0x28;
 }
 // @retail 0x315720
-void contact_sizes_315720::get_sizes(lane_b_constraint_sizes *sizes)
+void contact_sizes_315720::info(lane_a_constraint_info *output) const
 {
-	lane_b_contact_constraint_prefix::get_sizes(sizes);
+	lane_b_constraint_sizes *sizes = (lane_b_constraint_sizes *)output;
+	((lane_b_contact_constraint_prefix *)this)->get_sizes(sizes);
 	sizes->op_bytes += 0x88;
 }
