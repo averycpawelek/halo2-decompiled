@@ -113,7 +113,7 @@ static __forceinline float &contact_property_318c10(lane_b_contact_property *pro
 unsigned short class_318e60::add(lane_a_contact_body const *first,
 	lane_a_contact_body const *second, void const *input, lane_b_contact_point const *point)
 {
-	long count = constraint.property_count;
+	long count = contacts().property_count;
 	if (count > 250) return 0xffff;
 	lane_a_contact_entity *entity_a = contact_root_318c10(first)->entity;
 	lane_a_contact_entity *entity_b = contact_root_318c10(second)->entity;
@@ -121,7 +121,7 @@ unsigned short class_318e60::add(lane_a_contact_body const *first,
 		((s_1d1541 *)world)->function_30d2b0(&constraint);
 	lane_b_contact_point *added_point;
 	lane_b_contact_property *property;
-	long id = constraint.add(&added_point, &property);
+	long id = contacts().add(&added_point, &property);
 	__m128 velocity_a, velocity_b;
 	contact_motion_318c10(entity_a)->velocity_at(&point->position, &velocity_a);
 	contact_motion_318c10(entity_b)->velocity_at(&point->position, &velocity_b);

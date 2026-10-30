@@ -65,6 +65,7 @@ public:
 	}
 	void export_base(lane_a_constraint_description *description) const;
 	void import_base(lane_a_constraint_description const *description);
+	__forceinline lane_a_constraint() : c_a(1) {}
 	lane_a_constraint(lane_a_constraint_description const *description);
 	virtual ~lane_a_constraint();
 	virtual void *v3();
