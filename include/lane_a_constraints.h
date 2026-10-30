@@ -78,11 +78,13 @@ public:
 	void set_entity_a(hkEntity *entity);
 	void set_entity_b(hkEntity *entity);
 };
-// The empty runtime layer has its own out-of-line destructor. Constructor
-// unwind records target that wrapper, which tail-calls lane_a_constraint.
-class lane_b_rigid_constraint : public lane_a_constraint
+// The abstract runtime layer installs no intermediate table. Its out-of-line
+// destructor is shared by the concrete joints and tail-calls lane_a_constraint.
+class __declspec(novtable) lane_b_rigid_constraint : public lane_a_constraint
 {
 public:
+	virtual ~lane_b_rigid_constraint();
+	virtual void build(lane_a_solver_input const *, lane_a_solver_output *) = 0;
 	lane_b_rigid_constraint(lane_a_constraint_description const *description)
 		: lane_a_constraint(description) {}
 };
