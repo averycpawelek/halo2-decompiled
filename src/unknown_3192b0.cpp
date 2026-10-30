@@ -1,6 +1,7 @@
 // @flags /O2 /GL-
 // Havok (third-party physics library): the shared object of kind 1, built
 // with one reference and destroyed as its base is.
+// The global instance and allocated instances use the same lifetime interface.
 #include "kind_object_3192b0.h"
 #include <new>
 
