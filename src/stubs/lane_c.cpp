@@ -232,8 +232,6 @@ public:
     void function_2dbcf0(s_2dc030 const *arg_0);
 };
 
-// @stub 0x314710
-c_314710::c_314710(hkEntity *arg_0) {}
 
 struct c_shape_library_base_a
 {
