@@ -3,6 +3,7 @@
 // was made for, with one reference.
 #include "owned_reference_318b90.h"
 #include "lane_a_contact_manager.h"
+#include "contact_manager_318c10.h"
 
 // @retail 0x318b90
 class_318b90::class_318b90(void *owner)
@@ -26,15 +27,6 @@ public:
 	char unknown0[0x12c];
 	char field_12c;
 	hkBool function_30ca30(void *entry);
-};
-
-class class_318e60 : public reference_base_318970
-{
-public:
-	c_1d1261 *world;
-	long unknownc;
-	lane_b_contact_constraint_prefix constraint;
-	void remove(unsigned short id);
 };
 
 // @retail 0x318e60
