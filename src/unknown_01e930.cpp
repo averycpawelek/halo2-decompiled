@@ -391,6 +391,10 @@ PRIVATE inline __int64 bink_read_tsc(void)
 // allocation/clock/audio/output phases and full body restored; frame remains 0x3c.
 // Separate native constant audio arrays at entry: surround bins/volumes, stereo bins/volumes,
 // surround pair/stereo pair/both bins/all 290/300/289/299/307/296/297/306. All restored.
+// Round 411: Allocation result produced on both admission arms, void/byte pointers and
+// long/dword carriers with entry/post-clock declarations, all eight 285; each carrier
+// with false-default skippability at admitted/entry phase, all eight 281. All are 1098
+// bytes with frame 0x3c; original entry allocation zero and complete body restored.
 // @retail 0x156090
 void function_156090(char const *name, dword flags)
 {

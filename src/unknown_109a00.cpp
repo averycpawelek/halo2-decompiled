@@ -97,8 +97,10 @@ static __forceinline bool carried_object_motion_apply(long object_index, vector3
 							transform4x3f moved;
 							vector3f previous_velocity;
 							function_142a60(&motion->transform, &matrix, &moved);
-							carrier_point_velocity(&motion->previous_center, &motion->previous_velocity,
-								&motion->previous_angular_velocity, &matrix.position, &previous_velocity);
+							vector3f previous_offset;
+							vector3d_from_points3d(&motion->previous_center, &matrix.position, &previous_offset);
+							cross3f_staged(&motion->previous_angular_velocity, &previous_offset, &previous_velocity);
+							vector3f_add(&motion->previous_velocity, &previous_velocity, &previous_velocity);
 							vector3f *object_velocity = &object->velocity;
 							object_velocity->i -= previous_velocity.i;
 							object_velocity->j -= previous_velocity.j;
@@ -117,10 +119,11 @@ static __forceinline bool carried_object_motion_apply(long object_index, vector3
 							displacement.j = matrix.position.y - moved.y;
 							displacement.k = matrix.position.z - moved.z;
 							displacement.i = matrix.position.x - moved.x;
+							real scale = (real)g_510c54->field_2_3;
 							vector3f change = {
-								displacement.i * (real)g_510c54->field_2_3,
-								displacement.j * (real)g_510c54->field_2_3,
-								displacement.k * (real)g_510c54->field_2_3
+								displacement.i * scale,
+								displacement.j * scale,
+								displacement.k * scale
 							};
 							function_b75a0(object_index, &moved, NULL, NULL, NULL, false);
 							*velocity = object->velocity;
@@ -139,8 +142,8 @@ static __forceinline bool carried_object_motion_apply(long object_index, vector3
 	return result;
 }
 
-// score 88 (was 88): Frame 0x88 agrees; the second point-velocity copy (angular i preloaded,
-// x offset before y) and the nonrotating scale (clock copied for j and k) remain, five bytes long.
+// score 74 (was 88): Frame 0x88 agrees; the second point-velocity first linear add uses a register
+// copy and memory add instead of a direct load/add. The nonrotating scale/add schedule remains, three bytes long.
 // Earlier: point-velocity and nonrotating scale/add
 // Frame 0x88 and first point-velocity agree; second point-velocity and nonrotating schedules remain.
 // Frame 0x88 and first point block agree; second point inputs, nonrotating products and five extra bytes remain.
@@ -209,6 +212,10 @@ static __forceinline bool carried_object_motion_apply(long object_index, vector3
 // shared displacement producer 177; aggregate and immutable aggregate 88/88.
 // Complete native moving record / read-only record / object-header payload / both 88 each;
 // read-only headers / both with read-only motion / both with read-only headers / all 88 each.
+// Round 38: second staged 181; first staged 176; first direct 177; second direct 181. With a named
+// clock: first staged 74 (plain-confirmed, kept), second staged 186, first direct 89, second direct 179.
+// Displacement orders on the kept graph ijk/ikj/jik/kij/kji 74/73/74/73/73; the one-point forms restored;
+// a nonrotating velocity receiver 164.
 // @retail 0x109a00
 bool function_109a00(long object_index, vector3f *delta, bool rotate, vector3f *velocity)
 {

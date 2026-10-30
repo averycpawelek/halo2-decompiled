@@ -537,6 +537,14 @@ PRIVATE inline void record_rotate_vector(vector3f *vector, vector3f const *axis,
 // axis-source-output first and scalar inputs first, each with projection before/after original
 // component snapshots, all 90. Original helper, in-place input copies and complete body restored.
 // Round 247: native ring-distance product 90; with ring phase 142; double base 118; base/phase 142; shared ring product 90; shared ring/phase 142; shared ring/base 118; all three 144. SSE ring conversion and rotation spill remain.
+// Round 250: existing staged-cross producer orders projection/components/cross, projection/cross/components,
+// components/projection/cross, components/cross/projection, cross/projection/components and cross/components/projection
+// 219/219/219/225/225/225; uniform projected-axis parts on first/last orders 102/237.
+// Original helper, input snapshots and body restored; ring conversion and rotation spill remain.
+// Round 253: Per-spoke query producer before direction/angle/sine/cosine, default-if versus
+// conditional, 163/247/153/246/281/281/147/241. All exact-only; no match. Original query
+// observation, rotation helper, input copies, inherited local qualifier and complete body restored.
+// Round 255: unsigned-word ring with short/word/byte/char spokes 117/117/246/246; signed-byte ring with short/word/byte/char spokes 130/130/247/247. All restored; x87 ring conversion and rotation spill remain.
 // @retail 0x26d570
 long function_26d570(long object_index)
 {

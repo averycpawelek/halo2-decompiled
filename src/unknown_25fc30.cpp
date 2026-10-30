@@ -930,26 +930,7 @@ void __stdcall function_25edd0(
 	}
 }
 
-// score 31 (was 31): only the range bonus differs: retail tests over 2 first, then over 0, and
-// multiplies by 0.5 then by 10; ours tests over 0 first and folds the product. Retail's exact bonus
-// (two tests and two multiplies, as a staged `*=`, a named half, a division or a cast) gives retail's
-// code through the bonus but reorders the line loop's dot product (k+i+j in retail, j+k+i ours): 48
-// (997 bytes); with the product folded the two tests give 39 (xmm6/xmm7 rotated, loop as retail).
-// Earlier (score 50, before the iterator calls matched): normalized clamp 66; bounded raw margin 137;
-// positive fraction 83; source-domain fraction 51; nested candidate 50; conditional weapon result 50;
-// real unit reference 50; guarded owner result 264; upper-margin-first 58; range once/limit once/range
-// before root 155; full-width mode 258; reversed style cases 50; forward position countdown 255; nearest
-// conditional 50; vector workspace entry offset/closest/both 50/50/50; in-place offset 50; component
-// projection 95; in-place component projection 155; projected workspace first 50; unsigned line ordinal
-// 145; selected-arm staged scales 72; upper-first staged 66; half by division 50; selected margin carrier
-// 186; near/far or separate bonus names 50; staged/name pairs 66; nested select 83; staged halves with
-// the new order 66; new order with folded multiply 58; old order with two multiplies 72; squared-length
-// local 186; closest product order 66; margin initialized 66.
-// Round 155 (plain checks): two tests with the folded product 39, with a division 39; two multiplies as
-// a cast product (either operand order, or a division) 48, staged `*=` 48, staged division 48, named half
-// 48, bonus assigned in all three arms 65; on the staged form: dot operands swapped 48, no direction
-// pointer 126, squared-length local 168, closest products reoriented 48, t declared before the offset 48,
-// `-t` 48 and the length compare reversed 48 (both the same code), `continue` on the line type 48.
+/* adds the weapon-range bonuses and the bonus for the distance to the nearest line of type 2 */
 // @retail 0x25eea0
 void __stdcall function_25eea0(
 	long actor_index,
@@ -1038,7 +1019,7 @@ void __stdcall function_25eea0(
 			{
 				real range = weapon->unknown0c * 0.8f;
 
-				position->score += range > distance ? 10.f : range / distance * 10.f;
+				position->score += range > distance ? 10.f : 10.f * (range / distance);
 			}
 
 			if (maximum_range > 0.f && maximum_range > distance)
@@ -1055,9 +1036,13 @@ void __stdcall function_25eea0(
 					margin = distance - minimum_range;
 				}
 				real bonus = 0.f;
-				if (margin > 0.f)
+				if (margin > 2.f)
 				{
-					bonus = margin > 2.f ? 10.f : margin * 0.5f * 10.f;
+					bonus = 10.f;
+				}
+				else if (margin > 0.f)
+				{
+					bonus = 10.f * (margin / 2.f);
 				}
 				position->score += bonus;
 			}
@@ -1090,9 +1075,11 @@ void __stdcall function_25eea0(
 						closest.i = direction->i * nt + offset.i;
 						closest.j = direction->j * nt + offset.j;
 						closest.k = nt * direction->k + offset.k;
-						if (nearest > length_sq3f(&closest))
+						real length_squared = length_sq3f(&closest);
+
+						if (nearest > length_squared)
 						{
-							nearest = length_sq3f(&closest);
+							nearest = length_squared;
 						}
 					}
 				}

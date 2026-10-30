@@ -60,6 +60,9 @@ void function_213970(void);
 // Without the size pragma 172; stores in address order 145 (184 without the pragma); chained
 // zero/NONE stores 145; language read at each use 143 (199 without the pragma). The two blocks
 // are 0x557c90..0x55b4ec and 0x55b4f0..0x55c030; their globals are defined in three other files.
+// Native progress/handle/both reset records 174/168/187; reversed clear phases 145;
+// reversed with native progress/handle/both 175/168/187; native records after buffers 183.
+// Separate allocation still prevents the two retail-wide clears; original body restored.
 // @retail 0x2136c0
 void function_2136c0(void)
 {

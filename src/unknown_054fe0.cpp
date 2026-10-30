@@ -1140,8 +1140,19 @@ static inline bool session_member_get_qos(s_network_observer *observer, c_class_
 // (two stack arguments): 112, host arm first 112, with continue 112; the same
 // with host read after the observer 109/109. Retail also re-reads member_count
 // in the member check where ours reuses the loop's load.
+// Observer as a ternary initializer 102 (convention flips, 0x658c0 and 0x65770
+// lost); times declared first 67; mask update as `x = x | bit` 67; loop index
+// declared before the loop 67; `count != 0` 67.
 // Round 198: guarded-result graphs at the existing channel/observer/member QoS helpers, seven
 // combinations 67 each; all three with late host read 86.
+// Round 29: the observer through the existing observer getter gives retail's allocation
+// once the host is read after it and the mask is also written in a host arm (frame 0x78,
+// latency ebp, session ebx, the cursor spilled to retail's slot), but the count/maximum/
+// minimum stores sink past the memset, the check still reuses the loop's member_count
+// and the loop head gets a pad: 99 with `continue`, as `else if`, as `if (i != host) ...
+// else`, and as a guarded do loop; the getter alone 100. With those stores ahead of the
+// observer branch (retail's order) the cursor keeps the register in every form screened:
+// getter after the counters, helper parameter orders, qos scope, times position, while loop.
 // @retail 0x64480
 void network_session_get_member_latency(s_session_member_latency *latency, c_class_58d20 *session)
 {
@@ -1681,9 +1692,10 @@ static __forceinline bool function_65341(c_class_58d20 **out)
  return result;
 }
 
-// score 114 (was 120): retail picks the observer pointer with a conditional move
+// score 118 (was 118): retail picks the observer pointer with a conditional move
 // after the flag test; ours computes the same value with a negation and a test.
-// score 118 (was 118): retail builds this body with SSE (cmovne, movss, cvttss2si), which this
+// Earlier retained form counted 114 (was 120).
+// Earlier: retail builds this body with SSE (cmovne, movss, cvttss2si), which this
 // file lacks, and inlines the session-a/b getters there (their static inline bodies live in
 // unknown_058ee0.cpp). In a new /arch:SSE file: as written 136; if-form state with the variant
 // getter 142 at retail's length; existing getters with forceinline declarations 162 (kept out of
@@ -1693,6 +1705,8 @@ static __forceinline bool function_65341(c_class_58d20 **out)
 // the reset alone 136; early variant plus reset 138; nested success guards 146;
 // zero-then-assign state 145; ordinary inline selector 238 (398 bytes); state/result
 // declarations swapped 145; pointer-terminated user loop 145. Original restored.
+// Round 256: Actual selector state-test result in bool/byte/short/long, conditional/guarded state
+// acquisition 135/139/135/139/152/153/153/153. All restored.
 // @retail 0x65340
 void function_065340(void)
 {

@@ -192,7 +192,10 @@ short __stdcall function_1c04f0(long actor_index, s_slot *slot, bool active)
 	return result;
 }
 
-// score 143 (was 143): frame 0xa0 versus 0xb0 (the 0x1697c0 output is 0x5c bytes here; the shared
+// score 143 (was 143): frame 0xa0 versus 0xb0 (the 0x1697c0 collision output is 0x5c bytes; the
+// shared header type is 0x4c), then the scratch registers are rotated by one from the 0x110ab0
+// argument on (eax/ecx/edx), which also moves the request/collision arguments, the target copy and
+// the inlined 0x1f4460 head. The movement helper already expands.
 // header type is 0x4c), then scratch registers rotated by one from the 0x110ab0 argument on
 // (eax/ecx/edx), which also moves the request/collision arguments, the target copy and the
 // inlined 0x1f4460 head. The movement helper already expands.
@@ -213,6 +216,8 @@ short __stdcall function_1c04f0(long actor_index, s_slot *slot, bool active)
 // Full output with stamp byte/native payload, stamp signed byte, near byte, near signed byte,
 // both bytes and the three mixed/signed combinations: eight forms 140 at 955 bytes.
 // Native status declarations do not fix the post-stamp register rotation; all types/body restored.
+// Round 289: Computed proximity bool/byte/short/long on the complete collision/native-payload graph; then each with one result exit:
+// [247, 247, 252, 250, 231, 231, 226, 228]. All executable source and temporary types restored.
 // @retail 0x1c0670
 bool __stdcall function_1c0670(long actor_index, s_slot *slot)
 {

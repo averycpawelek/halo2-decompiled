@@ -111,8 +111,10 @@ bool function_1f4460(long actor_index, s_type_c3b527 const *point, long target_i
 /* slot type 0x24's update: moves the actor to its prop (to the point the
    prop names, or along its direction) and flags the slot when it is there
    or cannot get there (always returns true) */
-// score 144 (was 144): frame 0x48 and retail length agree; entry pool/view carriers, category width and movement/failure placement remain.
-// Earlier score 146 (was 146): frame 0x48 and length 1077 agree; the entry registers (actor offset in
+// score 144 (was 144): entry actor-pool/view carriers, category width and movement/failure
+// placement remain.
+// Earlier: frame 0x48 and retail length agree; entry pool/view carriers, category width and movement/failure placement remain.
+// Earlier: frame 0x48 and length 1077 agree; the entry registers (actor offset in
 // EBP, ours, against EAX plus lea), the actor index kept in ESI (retail reloads it from its
 // stack slot), the prop type tested as long (retail 16-bit), and the block layout: retail puts
 // the type 1 arm and the unsupported-type return after the result check (type 0 falls into it,
@@ -146,6 +148,12 @@ bool function_1f4460(long actor_index, s_type_c3b527 const *point, long target_i
 // early origin with native category 237; complete squared direction, scaled target products and
 // target coordinates 146 each (399 with consistent actor getter observations).
 // Shared index-based view producer 317; initial handle shared by both getters 318; with read-only trace state/native category 318/318; read-only trace state alone 144; word movement result 151; unsigned long category 144; shared getter plus word result 315. Restored.
+// Round 415: complete prop handle 318; view at every field use 428; both 428; attachment handle
+// 305; prop/attachment 321; view/attachment 435; all three 435; all with native category 442.
+// Original body restored; typed slot data retained.
+// Bounded distance in the actual trace result: native field alone 144; native category 190; entry trace
+// lifetime 144/190; shared squared length 144/190; both lifetime and shared length 144/190. Original body
+// restored.
 // @retail 0x1b2770
 bool __stdcall function_1b2770(long actor_index, s_slot *slot)
 {

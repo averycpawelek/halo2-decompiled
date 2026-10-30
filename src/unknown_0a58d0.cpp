@@ -316,7 +316,9 @@ bool function_a9820(long *block, long index)
 	return result;
 }
 
-// score 11 (was 11): the database pointer takes ECX, so the active byte cannot fold into the scaled address.
+// score 11 (was 11): the database pointer takes ECX where retail keeps it in EDX, and ours takes the
+// record address before the active test and reads the byte through it (`lea eax, [eax + ecx + 0x20ac]`,
+// `mov cl, byte ptr [eax + 6]`), while retail reads the byte from the array and takes the address after.
 // Early definitions 31; direct dispatch 13; const record 11; record reference 11; separate index mask 11;
 // short type 22; definitions first 13; definition local 13; function-scope database 11; function-scope type 11.
 // Signed accepted-state range 12; state/all rejection guards 11/11; database reference/const
@@ -330,6 +332,7 @@ void function_a99f0(long index, long *block)
 		long identifier = ((s_object_header *)g_4e0300->data)[index & 0xffff].object->field_d4;
 		if (identifier != NONE)
 		{
+			// The world pointer is read from the shared global again for the record lookup.
 			// Read the shared world through its const pointer at the later use.
 			world = (s_z_state_world *)*(s_simulation_world *const *)&g_4cf77c;
 			s_z_entity_record *entity = &world->database->entities[identifier & 0x3ff];

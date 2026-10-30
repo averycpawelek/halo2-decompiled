@@ -1909,6 +1909,9 @@ struct s_session_map_view
 // zero constant takes EDI and the limit spills); at the second use only 112; at the first
 // only 195; both plus the limit at function scope 194; both with the team mask declared
 // first 192; team mask declared first alone 103.
+// Round 284: Native long/dword team bit held for both mask uses 103/103;
+// host readiness accumulated from its test 124/124; unique teams accumulated from
+// their mask tests 124/124; both test counts 140/140. Original counts restored.
 // @retail 0x19a2ce
 long function_19a2ce(real *progress)
 {

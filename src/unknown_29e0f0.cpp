@@ -77,7 +77,8 @@ PRIVATE __forceinline real function_29e3b1(point3f const *arg_0, point3f const *
     real local_2 = arg_0->z - arg_1->z;
     return (real)sqrt(local_2 * local_2 + local_1 * local_1 + local_0 * local_0);
 }
-// score 406 (was 406): frame 0x68/0x64, induction/endpoint homes and x87 scheduling differ.
+// score 398 (was 398): frame 0x64 now agrees; selected defaults, point bitmap, endpoint homes, root-table roles and x87 scheduling differ.
+// Earlier: frame 0x68/0x64, induction/endpoint homes and x87 scheduling differ.
 // Earlier: table-pointer roles now agree; frame 0x68/0x64, outer-loop reload placement, inner-loop registers and x87 square order remain.
 // Complete initial guard exits 458; CRT output point copy 416; distance second point by value 569;
 // squared-distance second point by value 430; conditional table pointer initialization 416.
@@ -130,8 +131,9 @@ PRIVATE __forceinline real function_29e3b1(point3f const *arg_0, point3f const *
 // Round 380: Native point bitmap unsigned/signed 456/456; unsigned group bitmap with array/unsigned/signed point bitmap 426/434/434; signed group bitmap 426/434/434. Original arrays restored.
 // Round 239: coherent validator/reference-provider ordinary, inline and noinline
 // declaration pairs (eight non-original combinations) 406 each. All restored.
-// score 398 (was 406): the selected point index is a byte, as retail stores it. The frame 0x68 versus
+// Earlier: the selected point index is a byte, as retail stores it. The frame 0x68 versus
 // 0x64, the group and point bitmap homes and the remaining register rotations remain.
+// Round 412: byte terminal/pass/both/output/terminal-output/pass-output/all/all plus accepted byte 446/436/439/398/447/436/439/439; native signed group on the current byte producer 496. All original types, loops and helper contracts restored.
 // @retail 0x29e0f0
 bool __stdcall function_29e0f0(point3f const *arg_0, long arg_1, s_reference arg_2,
     s_29de21 *arg_3, s_29e0f9 *arg_4)

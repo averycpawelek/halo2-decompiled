@@ -12,7 +12,7 @@ struct s_1badc0
 
 real normalize2d(point2f *arg_0);
 
-// score 211 (was 220): Frame 0x90 agrees; output EBX/EBP and vector/SSE homes remain. Retail
+// score 211 (was 211): Frame 0x90 agrees; output EBX/EBP and vector/SSE homes remain. Retail
 // copies the input point a second time (at 0x28, through integer moves) for the two vector
 // differences and keeps the center at 0x34; ours has the center at 0x28 and the to-center vector at 0x34.
 // Round 90: radius read before the center copy 215 and the copied point as the actor-to-point
@@ -112,6 +112,9 @@ real normalize2d(point2f *arg_0);
 // Round 273: uninitialized squared-separation/projection/adjusted-distance declarations
 // at entry, seven subsets 220 each; all with the clearance declaration at entry 220.
 // Original scalar declarations restored; output EBX/EBP and vector homes remain.
+// Round 269: displacement workspace 260; separation workspace 211; both 260; direction-scale workspace 251;
+// displacement/scale 207; separation/scale 251; all 207; all with entry point storage 207.
+// Four-point best below the retention margin; original executable body restored.
 // @retail 0x1badc0
 bool __stdcall function_1badc0(long arg_0, long arg_1, point3f const *arg_2,
     s_type_c3b527 *arg_3, long *arg_4, bool arg_5, bool *arg_6)

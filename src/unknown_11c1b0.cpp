@@ -67,9 +67,23 @@ struct s_11c1b0
 // argument's home only when defined after the argument's first read); validity bool first, one
 // or two variables 130/130, with the false result first 132; local copy of the requested index
 // read first 128.
+// Round 16 (lane 10): on the one-variable form, arg_0 copied first 128 and the variable renamed 128
+// (still its own slot), the body in an inner block 100. Byte-for-byte match (plain check, all seven
+// callers unchanged) only when the saved index lives in the parameter variable itself: copy arg_0
+// into a requested-index local, assign arg_0 = local_0 at entry and arg_0 = g_4e6948->index after
+// function_137da0, and test the requested local everywhere else. Not kept: a reused parameter.
 // Round 406: Initial index/zero registers and saved-index publication remain. Consistent unsigned-
 // word current/saved/request equality with 0xffff sentinel, parameter-read ordering, saved entry
 // lifetime and byte late-success combinations. Scores 75/75/133/133/91/91/137/137. All restored.
+// Round 18 (lane 10): an inline helper for the four global clears (both sites) 50; the saved index
+// declared at the top and first assigned in the block 50 (still the argument's home: the def, not the
+// scope, decides); the copy used in the early true test 50, in both tests 50; the copy re-read from
+// the global 50 (all identical code).
+// Round 93: the saved index already shares arg_0's slot; left are local_0/zero in di/ebx (retail
+// bx with xor ebx, ebx / edi) and the slot store after the range test (retail: before it, as only
+// a reassigned parameter gives). Both NULL-clear blocks as one inline helper 50; early return false
+// for the range test 122; saved index declared at function scope 50; early true test on the saved
+// copy 50; unload argument written in the call 50.
 // @retail 0x11c1b0 standard
 bool __stdcall function_11c1b0(short arg_0, bool arg_1)
 {

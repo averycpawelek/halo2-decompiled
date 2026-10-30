@@ -77,6 +77,28 @@ void c_animation_channel::clear()
 }
 
 // score 36 (was 36): incoming graph save and the late graph store still differ. With retail's
+// store order (graph after unknown0d) and the byte-pointer clear the body equals retail except
+// that the animation id is copied through ECX (retail: ESI, while CX holds unknown0e), so ESI is
+// never modified and LTCG passes graph straight in ESI (retail: ECX, then push esi; mov esi, ecx);
+// the four matched callers break. Early frame-position store kept (36).
+// Forms: sentinel/word/byte clear chains 41/41/43; two-byte memset 43; stored flags 41; stored-ID
+// result 76; renamed late graph 42; dword/long flags plus early frame 36/37; paired defaults 42;
+// identifier memcpy 36; metadata before resets 42; trailing defaults 41; redundant byte clear
+// removed 36; early derived state 38; explicit state bit 35; defaults plus memcpy 42;
+// validity-result 43; animation guard first 44; inline/noinline declarations 41; existing reset 43;
+// state memset 51; high-bit predicate 41; ID word copies 50; retail store order 51; counter from
+// bit 15 as conditional/ternary 43/43 (retail order 49/51); graph as a by-value class 43 (on the
+// stack); graph store first/after the NONE words 41/41, after the zero words/unknown0d/frame 42
+// each; inline definition in retail order 42, with graph copied to a local 42; nested validity
+// gates 36; separate invalid guards 42; eager validity tests 47; short-pair memset 50 (eager
+// validity and short-pair memset lose the four checked callers); early short metadata 43; early
+// flags word 41; early long metadata 43; named short promotion 36; success result/nested success
+// result 49/49; early invalid guard with early frame 36; role-named inputs 36; late rate/short
+// metadata/both 36/36/36; both with the success result 49; out-of-line member declaration 36/42;
+// immutable input ID 36/42; ID sentinel memset 50/51; direct state bytes 43/51.
+// Round 75: existing clear() then retail-order assignments 51; const graph 51; __fastcall member
+// declaration 51 (LTCG overrides it); retail order with the byte-pointer clear 42; eight orders of
+// the graph/frame/id/rate/unknown0e/unknown10 assignments 42 each.
 // store order (graph after unknown0d) the body equals retail except that LTCG passes graph
 // straight in esi (no push esi; mov esi, ecx) and the four matched callers break.
 // Early frame-position store kept (36). sentinel chain 41; word clear chain 41; byte clear chain 43;
@@ -107,10 +129,6 @@ void c_animation_channel::clear()
 // guard with early frame 36; role-named inputs 36; late rate/short metadata/
 // both 36/36/36; both with the success result 49.
 // Further paired early-frame/retail-order forms: out-of-line member declaration 36/42;
-// immutable input ID 36/42; ID sentinel memset 50/51; direct state bytes 43/51.
-// store order (graph after unknown0d) and the byte-pointer clear the body equals retail except
-// that the animation id is copied through ECX (retail: ESI, while CX holds unknown0e), so ESI is
-// never modified and LTCG passes graph straight in ESI (retail: ECX, then push esi; mov esi, ecx);
 // the four matched callers break.
 // Tried: early frame-position store (kept, 36); sentinel/word/byte clear chains 41/41/43; two-byte
 // memset 43; stored flags 41; stored-ID result 76; renamed late graph 42; dword/long flags plus early
@@ -127,6 +145,21 @@ void c_animation_channel::clear()
 // success result 49. Round 75: existing clear() then retail-order assignments 51; const graph 51;
 // __fastcall member declaration 51 (LTCG overrides it); retail order with the byte-pointer clear 42;
 // eight orders of the graph/frame/id/rate/unknown0e/unknown10 assignments 42 each.
+// Round 5: `unknown10 |=` the flag bit with plain byte clears 43 (the clear folds away, graph in EDX,
+// five callers lost); retail order with unknown0e before graph 42; `animation_id = c_type_709360()`
+// for the NONE pair, current/retail order 55/59 (the dword store absorbs both word stores); retail
+// order with unknown0e converted to a short local before graph 42 (propagated; retail's movsx
+// still holds CX across the id copy, ours copies the id first).
+// Round 113 (the compile-only /Gd pass loads graph once into ESI for every late-store order, which
+// is what makes it an ESI argument): retail order with the graph parameter cleared when the index
+// is NONE 51 (same code); graph store after unknown16/unknown08 43/40 (graph EDX, flags ECX);
+// after unknown0c/flags 51; frame first with graph late 39; retail order with the byte pair 42
+// (ESI argument, NONE in ECX as retail).
+// Round 30: retail's store order read from its listing (retail's clear()/reset() keep source
+// order) 51 (graph in ESI, five matched callers break); default-constructed id for the two NONE
+// stores 62 (dropped as dead); that order with unknown0e after unknown0d 51; unknown0e after
+// the id copy 36; flags stored next to the derived byte 36. Retail hoists the unknown0e load
+// above the graph store, which is what leaves ESI for the id copy. All restored.
 // @retail 0x1c6470
 bool c_animation_channel::set(long graph_tag_index, word flags, c_type_709360 animation_id, long unknown08,
 	char unknown0c, char unknown0d, char unknown0e)

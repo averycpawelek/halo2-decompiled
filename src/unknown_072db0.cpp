@@ -1197,6 +1197,10 @@ long function_1931a0(long count, s_surface_description *variant);
 // Further forms (fast control 17): ordinary summary/elapsed/both stores 19/17/19;
 // elapsed accumulator/named expression 17/17; ratings at entry/before time 17/17;
 // complete range-state observations 17. Original body and inherited qualifications restored.
+// Round 114: BLOCKED-BY 0x7e210 for the session push and the elapsed store (a register-session stand-in
+// for 0x7e210 gives retail's order there, fast 17 -> 10). On that stand-in: plain summary stores 19;
+// minimum after/before the capacity 10/10; named capacity 56; player-count store later 23; minimum at
+// each use 10; capacity ternary 54. The group/add masks still take EDX/ECX (retail EAX/EDX).
 // @retail 0x73530
 void function_73530(c_helper_a *helper, void *description)
 {
@@ -1599,7 +1603,8 @@ static __forceinline s_player_slot_flags *function_74aa1(s_player_slot_flags *ar
     return local_0;
 }
 #pragma optimize("", on)
-// score 709 (was 709): Frame 0xc0 agrees; initial cursor base/home, slot and request/completion homes remain.
+// score 709 (was 709): Frame 0xc0 agrees; initial cursor base/home, slot and later homes remain.
+// Earlier: Frame 0xc0 agrees; initial cursor base/home, slot and request/completion homes remain.
 // frame 0xc0 agrees; native completion-group cursor retained;
 // initial cursor base/home, slot expansion and request/completion homes still differ.
 // Earlier: Frame 0xc0 agrees; first user/identity homes and protected request-builder inputs remain.
@@ -1688,6 +1693,9 @@ static __forceinline s_player_slot_flags *function_74aa1(s_player_slot_flags *ar
 // Round 184: Native byte/short/long/dword zero-one returns under inline/forced declarations
 // 709/709/730/730/709/709/709/709. Original bool return, long internal result, complete
 // predicate and helper boundary restored.
+// Round 414: actual request records/properties/admission domains short-long-long, long-short-long,
+// short-short-long, dword-long-long, long-dword-long, dword-dword-long, word-word-long and
+// short-short-dword 764/722/765/709/709/709/765/765. Original totals and complete body restored.
 // @retail 0x74aa0
 void function_074aa0(void)
 {

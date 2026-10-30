@@ -339,8 +339,14 @@ real function_1e3920(long actor_index);
 // Round 110: selection compared inside the else-if 46; reference declared before the scratch call 46;
 // success branch first 46; flag store before the result 46; out locals swapped 46; the reference
 // compared as a long value 46; the search part as an inline helper 223 (its callee inlined).
+// The scratch release written in each branch 47 (342 bytes, same carriers); the failing actor re-read
+// into `actor` 46; the selection tested without a local 46; the search outputs or the reference
+// declared at the top of the function 46/46.
 // Separate raw/admitted reference values with immutable raw value and entry request/scratch
 // declarations: 46/46/48/48/46/46/48/48, all 344 bytes. Original lifetimes and body restored.
+// Round 18 (lane 10): the select-or-remember tail as a forceinline helper 46 (same code); the reference
+// or the scratch pointer declared at the block top 46/46; the reference compare written global-first 46;
+// the result declared after the actor 65.
 // @retail 0x1bcab0
 bool __stdcall function_1bcab0(long actor_index, s_slot *slot)
 {
@@ -441,7 +447,8 @@ short function_1b8cc0(long object_index, long *seat_object_index);
 bool function_1b9200(long object_index, long prop_index);
 point3f *function_b9dd0(long object_index, point3f *result);
 
-// score 166 (was 166): retail keeps the special-vehicle flag in CL at the shared tail (the
+// score 85 (was 166): entry NONE homes, predicate setup and proximity SSE scheduling differ.
+// Earlier: retail keeps the special-vehicle flag in CL at the shared tail (the
 // special path does `mov cl, 1; jmp tail`, the scan's exits reload it from the dead actor
 // argument slot) and lays the tail out after the passenger scan; ours reloads the flag from
 // memory there and places the tail right after the special test, so the lockstep compare is
@@ -466,6 +473,10 @@ point3f *function_b9dd0(long object_index, point3f *result);
 // Round 273: complete separation from the existing header/native producers, each with
 // reverse sum/shared square/shared dot/all squared parts, 166/166/166/166 and
 // 200/200/200/200. Native producer grows the frame to 0x40; original graph restored.
+// Round 270 M: state-first conjunction with long/bool/byte/short special 213/213/213/215;
+// canonical bitwise conjunction with long/bool/byte/short special 152/85/85/201.
+// Boolean bitwise conjunction kept, 85/861 plain; the post-scan tail is shared.
+// Entry NONE EBP/EBX, predicate setup and separation SSE homes still differ.
 // @retail 0x1bbf40
 short __stdcall function_1bbf40(long actor_index, s_slot *slot)
 {
@@ -474,7 +485,7 @@ short __stdcall function_1bbf40(long actor_index, s_slot *slot)
     if (actor->unknown858 == NONE && actor->unknown26c != NONE && !actor->unknown269)
     {
         byte *tag = g_4e3b44[object_get(actor->unknown26c)->tag_index & 0xffff].bytes;
-        long special = *(short *)(tag + 0x1f0) == 6 && actor->unknown268;
+        bool special = (*(short *)(tag + 0x1f0) == 6) & (actor->unknown268 != 0);
         if (!special)
         {
             if (function_1b8d40(actor->unknown26c) != NONE)

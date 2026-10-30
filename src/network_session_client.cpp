@@ -580,7 +580,21 @@ static inline bool session_set_machine_limit(c_class_58d20 *session, long value)
 	return result;
 }
 
-// score 55 (was 55): aligned frame agrees; session ESI/EBX and machine/player carriers differ.
+// score 55 (was 55): aligned frame agrees; retail takes the session in EBX (its callers copy it
+// there) and gives the loop temporaries ESI/EDI; ours keeps the session in ESI. The session's use
+// weight decides it: without the tail (live/5dd0 test and the two setters) our build gives EBX
+// like retail (diagnostic 244, 321 bytes); without either setter alone it stays ESI (163/163).
+// Forms: countdown native object copy 55; native address copy 55; machine object reference 55;
+// machine value copy 55; short machine alias 55; immutable member count 55; machine counter
+// names 55; top-tested countdown 114; member count read before the clears 129; summary set after
+// the clears 129; machine pointer before the clears 55; zero initialisers for the two buffers 151;
+// summary as a conditional 131; as a session method 55; the address copy as a plain for loop 114
+// (477 bytes); bit-first mask test 55; nested mask and slot tests 55; short player-loop index 128;
+// address cursor in the copy loop 59; output pointer walked beside the player loop 58; player
+// buffer declared first 55; summary at function scope 63; limit helper as one `if` 55; named
+// player pointer 58; state macro for the tail's live test 221 (setters stop inlining).
+// aligned frame agrees; session ESI/EBX and loop-carrier rotation remain.
+// aligned frame agrees; session ESI/EBX and machine/player carriers differ.
 // Countdown native object copy 55; native address copy 55; machine object reference 55;
 // machine value copy 55; short machine alias 55; immutable member count 55;
 // machine counter names 55; top-tested countdown 114.
@@ -589,8 +603,23 @@ static inline bool session_set_machine_limit(c_class_58d20 *session, long value)
 // in ESI. Member count read before the clears 129; summary set after the clears 129; machine
 // pointer before the clears 55; zero initialisers for the two buffers 151; summary as a
 // conditional 131.
-// score 55 (was 55): as a session method 55; the address copy as a plain for
+// as a session method 55; the address copy as a plain for
 // loop 114 (477 bytes); bit-first mask test 55; nested mask and slot tests 55.
+// Existing setter: void result, guard exits, test-derived result and direct success 55 each;
+// native result 146 (out of line); shared live predicate, native receiver and input order 55 each;
+// force-inline native/original result 55/55.
+// aligned frame agrees; the code is retail's apart from the colours: retail
+// takes the session in EBX (its callers copy it there) and gives the loop temporaries ESI/EDI;
+// ours keeps the session in ESI. A first pass with the session on the stack (/Gd) and a harness
+// build give the session ESI for every body tried, even with either loop removed; unrelated code
+// doesn't move it. Tried: countdown native object copy 55; native address copy 55; machine object
+// reference 55; machine value copy 55; short machine alias 55; immutable member count 55; machine
+// counter names 55; top-tested countdown 114; member count read before the clears 129; summary set
+// after the clears 129; machine pointer before the clears 55; zero initialisers for the two
+// buffers 151; summary as a conditional 131; as a session method 55; the address copy as a plain
+// for loop 114 (477 bytes); bit-first mask test 55; nested mask and slot tests 55; short player
+// index 128 (492 bytes); member copy address cursor 59; walked output pointer 58; player buffer
+// declared first 55; summary declared at function scope 63.
 // @retail 0x6e720
 bool function_06e720(c_class_58d20 *session)
 {
@@ -854,12 +883,18 @@ bool __stdcall function_59e50(c_class_58d20 *session, long mode, long local,
  long count, const dword *identities, const long *values, const long *other_values,
  bool reserve, long timeout, const s_session_id *id, const void *extra);
 
-// score 40 (was 40): the twelve bytes of the member's record are copied with the
+// score 9 (was 40): the four unrolled copies of the member's twelve bytes now match
+// retail; what is left is that our destination's base address is computed before the
+// branch, so the flag byte is loaded into cl instead of al and the player mask into
+// ecx instead of eax, while retail computes the base after the mask has been stored.
+// Tried: the copies through a struct, a local and byte or dword source pointers (all
+// 40); the count incremented separately (244), before the copy (331) or through a
+// running destination pointer (9, kept); the destination pointer assigned inside the
+// branch (195) and a local player mask (359).
 // source and the destination in the other registers, and the two stores that
 // follow are scheduled in the other order.
 // Retail aligns its frame; 0x6fcc0, 0x6f940 and 0x6fa60 push all three arguments.
 // The body still differs; this boundary preserves those callers.
-// score 40 (was 40): the three copies in the loop keep the source and the
 // destination in the other registers, ours copies from esi to ecx and retail
 // from ecx to esi, and the count's increment sits before the loop counter's
 // reload in ours and after it in retail
@@ -872,11 +907,16 @@ bool __stdcall function_6fe90(c_session_state_joining *state, bool all_players, 
  network_session_close(joining);
  __declspec(align(8)) dword identities[16][3];
  memset(identities, 0, sizeof(identities));
+ dword *dest = identities[0];
  if (all_players)
  {
   for (long i = 0; i < 16; i++)
    if (current->player_mask & (1 << i))
-    memcpy(identities[count++], &current->players[i], 12);
+   {
+    memcpy(dest, &current->players[i], 12);
+    count++;
+    dest += 3;
+   }
  }
  else
  {

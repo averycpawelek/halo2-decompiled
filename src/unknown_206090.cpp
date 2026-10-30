@@ -240,6 +240,10 @@ PRIVATE __forceinline void function_206096(vector3f const *arg_0, real arg_1, ve
 // Round 274: Narrow velocity/query/ray phase scopes, seven subsets 1364/1364/1364/1362/1362/1362/1362;
 // all with bounded contact-velocity publication 1362. Two-point ray-scope lead below gate;
 // original full body and every helper restored, frame remains 0x5d0 versus 0x58c.
+// Round 189: char search result 1364; short search result 1435; long search result 1435; component role name
+// 1364; all pointer-root names 1364; separate velocity declarations 1364; direct native byte admission 1417;
+// existing point setter 1364.
+// Original body retained; frame 0x5d0 versus 0x58c, component/velocity homes and contact induction remain. All checked matches survive.
 // @retail 0x206090
 bool __stdcall function_206090(s_vehicle_physics_state *arg_0, vector3f *arg_1, vector3f *arg_2)
 {

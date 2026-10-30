@@ -765,7 +765,7 @@ struct s_actor_274140
 	long squad_index;
 };
 
-void function_1e3400(long actor_index, long squad_index);
+void function_1e3400(long actor_index, short squad_index);
 bool function_2052d0(long squad_index, long squad_group_index);
 
 // @retail 0x272c40
@@ -1384,6 +1384,9 @@ PRIVATE __forceinline bool function_274a51(long arg_0, s_object_seat const *arg_
 // Round 244: shared displacement dot 41; existing distance producer 278 (782 bytes);
 // pointer-result for traversal 274, with shared dot 274; capacity-first admission 45,
 // with traversal 278; existing request output/seat reference formals 41/41. All restored.
+// Round 251: bounded candidate count/index byte-short, char-short, short-byte, short-char, byte-byte, byte-char, char-byte, char-char 188/90/182/269/78/190/190/148. Original short counters and body restored.
+// Round 255: native complete candidate record, four construction lifetimes with aggregate assignment
+// 204/204/204/204; library-copy counterparts 204/204/204/204 (861 bytes). All restored.
 // @retail 0x274a50
 void function_274a50(long ai_index, long vehicle_index, long filter_range, bool load)
 {
@@ -2545,6 +2548,12 @@ struct s_scenario_scripting_view
 // Round 242: search point-table/count/actor-position snapshots 92/86/87;
 // point-table+count, point-table+position, count+position, all three 83/91/97/90;
 // all with loop-local short counter 91. Original complete search restored.
+// Round 251: nearest-test bool/byte/short/long results and their exact logical complements, all eight 80. Original strict selection, separate point branches and complete body restored.
+// Round 253: Existing native actor getter/view, counter-scope/selector-width/guarded-data
+// combinations 80/87/96/92/96/98/95/99. All 367 bytes; exact wrapper survives. Original getter,
+// selector, early counter and complete search restored; actor/counter homes and delayed data
+// observation remain.
+// Round 255: complete point-set fields at every use with data/root observation and short-counter scope subsets 102/86/102/87/101/88/101/89. All restored; wrapper unchanged.
 // @retail 0x2769d0
 void function_2769d0(long point_reference)
 {

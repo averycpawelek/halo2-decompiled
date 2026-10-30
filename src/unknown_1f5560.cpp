@@ -633,31 +633,27 @@ struct s_1f9762
 };
 
 // score 67 (was 67): approach as its own statement after the arms (no gotos), struct copy of the
-// direction and `remaining <` on the left give retail's length and code; left: retail lays the
-// previous-point false arm and the approach call after the first return (a jump-threaded copy)
-// with the last-path projection falling into the shared test. Direction-first dots 67/67;
-// `direction_valid && !last` 191 and nested `direction_valid` then `!last` 198 (the direction
-// pointer stays live in EDI); per-path projections 320; `!last` then `direction_valid` nesting 67.
-// The approach inside the not-last arm under its direction test 104; `direction_valid && !last`
-// (also with the last arm's tests swapped or nested, or `&& !projection_direction`) moves the
-// approach after the first return as retail does but keeps the projection pointer in edi and
-// the actor index in ecx (191); `!projection_direction &&` first 67; the last arm's
-// `actor->unknown4d4 && direction_valid` 69 and nested 67; permuter 56 tries, best 67.
-// Frame 0x1c agrees; fallback approach placement and scalar registers still differ.
-// Earlier: ours is five bytes longer than retail: the value that
-// is compared is loaded into another register and the call that follows takes
-// its argument from another stack slot.
-// Earlier: approach as its own statement after the arms (no gotos), struct copy of the direction and `remaining <` on the left give retail's length and code; left: retail lays the previous-point false arm and the approach call after the first return (a jump-threaded copy) with the last-path projection falling into the shared test. Direction-first dots 67/67; `direction_valid && !last` 191 and nested `direction_valid` then `!last` 198 (the direction pointer stays live in EDI); per-path projections 320; `!last` then `direction_valid` nesting 67.
-// Normal admission first 111; admitted last result 125; combined forced/last result 208;
-// path-defined validity 131; true-default validity 135; path-defined reached 149;
-// path-defined projection 67; admitted last with complete validity 149.
-// frame 0x1c and entry agree; deferred approach block placement differs.
-// The earlier longer body also differed in the compared-value register and call argument home.
-// approach as its own statement after the arms (no gotos), struct copy of the direction and `remaining <` on the left give retail's length and code; left: retail lays the previous-point false arm and the approach call after the first return (a jump-threaded copy) with the last-path projection falling into the shared test. Direction-first dots 67/67; `direction_valid && !last` 191 and nested `direction_valid` then `!last` 198 (the direction pointer stays live in EDI); per-path projections 320; `!last` then `direction_valid` nesting 67.
-// Separate approach body: first/last/both normalized-result assignments 111/105/116; entry valid default
-// 127; long validity/last/both 161/161/173; conditional last projection 67.
-// Reached word/native 110/111; short validity/last/both 163/164/178; direction-publication-first
+// direction and `remaining <` on the left give retail's length and code (frame 0x1c and entry
+// agree); left: retail lays the previous-point false arm and the approach call after the first
+// return (a jump-threaded copy) with the last-path projection falling into the shared test; ours
+// keeps them between the last arm (which jumps to the projection) and the projection. Tried:
+// direction-first dots 67/67; `direction_valid && !last` 191 (also with the last arm's tests
+// swapped or nested, or `&& !projection_direction`: the approach moves after the first return as
+// retail does but the projection pointer stays in edi and the actor index in ecx); nested
+// `direction_valid` then `!last` 198; `!last` then `direction_valid` nesting 67; per-path
+// projections 320; the approach inside the not-last arm under its direction test 104;
+// `!projection_direction &&` first 67; the last arm's `actor->unknown4d4 && direction_valid` 69
+// and nested 67; permuter 56 tries, best 67. Normal admission first 111; admitted last result
+// 125; combined forced/last result 208; path-defined validity 131; true-default validity 135;
+// path-defined reached 149; path-defined projection 67; admitted last with complete validity
+// 149; separate approach body: first/last/both normalized-result assignments 111/105/116; entry
+// valid default 127; long validity/last/both 161/161/173; conditional last projection 67;
+// reached word/native 110/111; short validity/last/both 163/164/178; direction-publication-first
 // 67; publication-first with word reached 110; readonly actor/path receivers 67 (fast).
+// Round 11: the previous point as if/else 67 (same code), as a default plus `if` 115 (623
+// bytes); the last arm written before the not-last arm (`else if (last)`) 105; the approach
+// after the direction test inside the not-last arm 104; `!reached &&` on the projection test 67.
+// A compile-only layout screen moved the approach block with none of ~10 forms.
 // Selected projection by value across four three-vector lexical orders, last/validity-first guards
 // 133/264 in every order; extra vector storage grows the frame and does not recover native tails.
 // @retail 0x1f9760
@@ -740,7 +736,7 @@ bool function_1f8100(long actor_index, point3f const *origin, point3f const *tar
 
 real normalize2d(point2f *v);
 
-// score 135 (was 171): frame 0x48 agrees and the code matches retail to the first trajectory call;
+// score 135 (was 135): frame 0x48 agrees and the code matches retail to the first trajectory call;
 // retail then caches the trajectory result in DL (spilled around calls, `mov al, dl` on the short
 // exits, no store after the request) where ours keeps it only on the stack, so the unit-state table
 // goes to EDX not ESI and the first facing store loads EAX/ECX; retail also returns the validity
@@ -821,6 +817,9 @@ real normalize2d(point2f *v);
 // or before the actor 135 each; fast-to-force inside the valid block 246; `return valid;` 135 (folded);
 // the original while scan on this graph 204 (935 B); `!(base_speed * 1.2f >= chosen_speed)` 135 (gives
 // retail's comiss/jae, same count).
+// Round 412: Native unit-state accessor 135; fallback-vector setters 192; joined two-use retry
+// result 213; accessor/setters 192; accessor/retry 213; setters/retry 187; all three 187; all with
+// short result 213. All restored.
 // @retail 0x1f8160
 bool function_1f8160(long actor_index, signed char const *types, point3f const *target, bool force)
 {
@@ -1335,7 +1334,7 @@ PRIVATE inline real movement_normalize2d(point2f *v)
     return 0.0f;
 }
 
-// score 238 (was 252): Frame 0x3c, result/flag homes and exits agree (1182 bytes against 1173). Retail's zero, radius and
+// score 238 (was 238): Frame 0x3c, result/flag homes and exits agree (1182 bytes against 1173). Retail's zero, radius and
 // direction sit in other SSE registers (xmm1/xmm5/xmm2-3; it keeps the result in xmm0 up to the type exit),
 // shares the left type-0 arm's `+ target.y` and flag re-test with the type-1 arm (ours threads that arm),
 // spills the lateral term to the type slot, and puts radius/desired, then direction, below the
@@ -1411,6 +1410,9 @@ PRIVATE inline real movement_normalize2d(point2f *v)
 // float local for it at the call 217 (argument block and both exits then as retail, 1178 B), with
 // the helper 252, declared before the sector 242 (one-use local, not kept); cosine dot y-first 238;
 // the type exit as `goto done` 251 (1173 B).
+// Round 412: Ordinary origin with entry getter inline 255; origin/direction/both transform inline
+// 274 each; getter with origin/direction/both inline 274 each; noinline getter with both
+// transforms inline 274. All body and declarations restored.
 // @retail 0x1f99d0
 real function_1f99d0(long actor_index, long object_index, short type, point2f const *target,
     point2f const *origin, point2f const *facing, s_obstacle_list const *obstacles)

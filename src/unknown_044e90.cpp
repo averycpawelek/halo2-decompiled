@@ -64,6 +64,10 @@
 // plane-normal declarations, eight forms 417/1742 each with frame 0x74a4. Four-point gain
 // below gate. On that layout scale/plane-name/both/table/scale-table/plane-table/all/
 // all-readonly-query 421/417/421/455/468/455/468/468. Header and entire body restored.
+// Round 38: Independent list objects, list/transform lifetimes branch/branch, branch/entry,
+// entry/branch and entry/entry, each with default/eight-byte alignment:
+// 418/418/419/419/419/419/419/419 fast, all 1742 bytes. Branch/branch recovers frame 0x74a4;
+// three-point gain rejected. Original combined workspace and complete body restored.
 // @retail 0x44e90
 void __stdcall function_44e90(short entry_index, short section_index)
 {

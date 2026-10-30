@@ -435,6 +435,9 @@ void function_245400(s_source_245400 const *source, long index,
 // Round 398: signed-code side producers with original masks and independent facing exits,
 // bool/byte/word/long 223/223/219/220; direct native material words on those graphs
 // 222/222/216/217. Complete original body and side producers restored.
+// Round 285: existing staged cross with original/first/second/both direct plane receivers,
+// then the same four with entry cross-output storage: 203/209/209/231/203/209/209/231 fast.
+// Original complete body restored; frame, source receiver and side homes remain.
 // @retail 0x245540
 void function_245540(long arg_0, s_source_245400 const *arg_1,
 	transform4x3f const *arg_2, real arg_3, real arg_4,

@@ -1620,6 +1620,8 @@ static inline bool weapon_state_replaceable(long current, long state)
 // Round 194: shared entry/eligibility/notification/all getters 134/137/67/118;
 // late animation receiver 130; class before mask 75; both 132; all getters with both 145.
 // Notification argument registers and success scheduling remain.
+// Lane 3 round 156: a stack-argument (varargs) forwarder for the notification call (diagnostic)
+// gives retail's code to the end but its own stack cleanup; the rest is 0xc9d00's register convention.
 // @retail 0x1058b0
 bool function_1058b0(long weapon_index, long state, bool force)
 {
@@ -1973,6 +1975,9 @@ bool __stdcall function_100130(long weapon_index, bool immediate)
 // first/other/both roots with unit observations 231/227/226; both roots with live handle
 // 180, also with unit observations 211. The two-point retail-length form is restored;
 // magazine, availability/transfer and pooled receiver homes remain.
+// Round 271: consistent header-data snapshot with retained/live handle, entry/gate
+// counter and short/long reserve values: 182/221/191/217/201/234/184/211.
+// All restored; magazine/availability and receiver homes still differ.
 // @retail 0x100b80
 bool function_100b80(long magazine_index, long weapon_index, long count)
 {
@@ -2247,6 +2252,9 @@ static __forceinline long real_to_long(real value);
 // Round 194: trigger/settings/both array roots 148/116/150; direct trigger/settings/both
 // elements 143/185/192; late trigger with settings root 154; read-only paired roots 150.
 // Original three timing homes and release/age interference remain.
+// Round 271: native trigger bits with byte/char age, nested/direct equality result,
+// and long/short threshold: 89/113/125/131/87/116/125/131. The two-point
+// signed-byte form is restored; timing homes and released/age/delta registers remain.
 // @retail 0x1027b0
 void function_1027b0(long weapon_index, long trigger_index, bool *pressed, bool *held, bool *released)
 {
@@ -2998,23 +3006,22 @@ s_weapon_type_definition_view g_467cd0 =
 };
 
 
-bool function_1023d0(long weapon_index, long barrel_index);
-
-static __forceinline bool weapon_barrel_ammunition_check(long weapon_index, long barrel_index)
+// @retail 0x1023d0
+bool function_1023d0(long weapon_index, long barrel_index)
 {
     s_weapon *weapon = WEAPON_GET(weapon_index);
     s_weapon_definition *definition = WEAPON_DEFINITION(weapon);
     s_weapon_barrel_definition *barrel_definition = &definition->barrels[barrel_index];
     bool result = false;
-    short magazine_index = barrel_definition->magazine_index;
-    if (magazine_index != NONE)
+    if (barrel_definition->magazine_index != NONE)
     {
-        s_weapon_magazine_definition *magazine_definition = &definition->magazines[magazine_index];
-        s_weapon_magazine *magazine = &weapon->magazines[magazine_index];
+        s_weapon_magazine_definition *magazine_definition = &definition->magazines[barrel_definition->magazine_index];
+        s_weapon_magazine *magazine = &weapon->magazines[barrel_definition->magazine_index];
         if ((magazine->rounds_loaded < barrel_definition->rounds_minimum && !TEST_FIELD_BIT(barrel_definition->flag2)) ||
             magazine->rounds_loaded < barrel_definition->rounds_per_shot || magazine->rounds_loaded == 0)
         {
-            if (function_1008f0(barrel_definition->magazine_index, weapon_index, false) > 0 &&
+            long magazine_index = barrel_definition->magazine_index;
+            if (function_1008f0(magazine_index, weapon_index, false) > 0 &&
                 magazine->rounds_loaded < magazine_definition->rounds_loaded_maximum)
             {
                 if (!TEST_FIELD_BIT(((s_weapon_flags_view_1023d0 const *)&weapon->value_16e)->flag5) && weapon->parent_index != NONE)
@@ -3036,36 +3043,6 @@ static __forceinline bool weapon_barrel_ammunition_check(long weapon_index, long
         }
     }
     return result;
-}
-
-// score 52 (was 52): the barrel record's pointer is kept in ebx where retail keeps it in
-// ebp (magazine record ebp/ebx), and the weapon pointer, magazine index and scratch
-// registers rotate ecx/edx against retail's. Forms tried: long outcome 128; byte outcome
-// 127; long helper return 127; both wide 128; const barrel 52; const magazine tag 52; const
-// tags 52; forced-body receiver names 52; late magazine tag 127; late const tag 127; saved
-// query selector 107; failure-first 52; exemption-first 76; distinct stop ordinals 52;
-// immutable selector/barrel 52/52; shared object/header getters 52/52; ordinary inline 468;
-// automatic inline 468; barrel reference 52; magazine-tag reference 52; magazine reference
-// 52; combined references 52; empty-first tests 88; query result first 140; actual flag
-// member 52; tag at each use 201; actual tag reference 52; success before notification 116;
-// parent handle 52; capacity snapshot 99; absolute object index 90; flag member with tag
-// reference 52; weapon/tag/both receiver inputs 52/52/52; barrel input 131;
-// weapon+barrel/tag+barrel/all inputs 52/52/52; direct success with weapon input 111; short
-// selector with barrel input 133; with weapon/barrel 52; with tag/barrel 52; with all
-// receivers 52; with external record references 52; reserve query, reload notification and
-// barrel stop noinline 52 each; neighbor inline getter 52; header-table local 52; masked
-// definition-index local 52; outcome and selector declarations swapped 52; nested macro get
-// 131; barrel address by arithmetic 52; shared-linkage forced inline 52; magazine address by
-// arithmetic 52; existing trigger-clear helper in the loop 64; barrel local renamed 52;
-// existing index/header getter for both fetches 52; named loaded-round count 52; one loop
-// counter for both loops 52.
-// Fast trials: Actual barrel elements at every use with direct/saved table; each with magazine
-// tag/state/both at every use 131/137/129/137/99/141/91/129. Original executable source restored. Best
-// saved-table/direct-state form is 68 in the plain check; all four callees match.
-// @retail 0x1023d0
-bool function_1023d0(long weapon_index, long barrel_index)
-{
-	return weapon_barrel_ammunition_check(weapon_index, barrel_index);
 }
 
 
@@ -4104,7 +4081,7 @@ transform4x3f *function_b8c00(long object_index, long *node_count);
 point3f *function_b9dd0(long object_index, point3f *point);
 void function_141590(transform4x3f const *in, transform4x3f *out);
 point3f *transform4x3f_apply_point(transform4x3f const *matrix, point3f const *point, point3f *out);
-void object_get_root_location(long object_index, s_location *location);
+s_location *object_get_root_location(long object_index, s_location *location);
 void __stdcall object_get_damage_owner(long object_index, s_damage_owner *owner);
 long __stdcall function_d6c80(s_type_1e6529 *data, long ignore_object_index);
 void function_a7d50(long index, long group, long target, short node, point3f const *point);

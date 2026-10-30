@@ -182,6 +182,7 @@ PRIVATE __forceinline void function_29ab94(vector3f const *arg_0, real arg_1, ve
 // Round 240: Plain native-component blend/clamp loops: fused long/short/byte
 // 409/479/479; blend before original clamps 383/415/415; fused with shared current
 // coefficient/complete expression parts 409/409. Frame/input homes remain; original body restored.
+// Round 251: native value-input scale 476; all six complete scaled-product declaration orders 476 each; complete scale plus planar staged products 476. Original repeated helper contracts and body restored.
 // @retail 0x29ab90
 void __stdcall function_29ab90(long arg_0, long arg_1, vector3f *arg_2,
 	vector3f *arg_3, short *arg_4, vector3f *arg_5, bool *arg_6, bool *arg_7, short arg_8)

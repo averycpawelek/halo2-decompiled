@@ -132,23 +132,30 @@ bool function_bafb0(long object_index, long ancestor_index);
 
 bool function_14ddc0(long local_player_index);
 
-// score 44 (was 44): existence BL and loop/unit allocation still differ. index-accessor
-// predicate 67; shared player index 65; short index 61; unsigned index 44;
-// relationship result/guards 44/44; immutable existence 44; audible guard 44.
-// existence byte and index/unit registers differ;
-// inline/noinline controller 44/44; inline/noinline hierarchy 44/44;
-// force-inline existence 44; controller range 58; membership 59; success break 44.
-// existence byte still coalesces across the controller call; eligibility input 44, eligibility guard 44, saved existence output 44, conditional merge 44; the same forms with the player accessor 44,44,44,44 (round 115).
-// existence flag and loop/unit registers differ;
-// long/word/byte split masks 72/59/69; char/long existence with mask 72/83;
-// existing player accessor 44; related-player result 86; shared emitter index 44.
-// score 44 (was 44): BLOCKED-BY 0xbafb0: `if (function_14ddc0(i) && split)` with the unit read as
-// `function_14ddc0(i) ? player(function_14de70(i))->unit_index : NONE` gives retail's two existence
+// score 44 (was 44): BLOCKED-BY 0xbafb0. The existence byte (retail BL, tested again after the
+// split test) and the loop/unit registers differ. `if (function_14ddc0(i) && split)` with the unit read
+// as `function_14ddc0(i) ? player(function_14de70(i))->unit_index : NONE` gives retail's two existence
 // tests (89 alone: the second hierarchy call sets esi before eax, so the unit leaves esi and the
-// table pointer spills); with 0xbafb0's parameters reordered to (ancestor, object) at its
-// definition and both calls it matches, with 0xbafb0 still matched.
-// Player-index accessor then NONE test 42; if-form unit 89; nested unit test 89; unit declared
-// first 89; short index 122; dword index 89; reused index/unit variable 89; inline unit getter 89.
+// table pointer spills); with 0xbafb0's parameters reordered to (ancestor, object) at its definition
+// and both calls it matches, with 0xbafb0 still matched.
+// Tried: index-accessor predicate 67; shared player index 65; short index 61; unsigned index 44;
+// relationship result/guards 44/44; immutable existence 44; audible guard 44; inline/noinline
+// controller 44/44; inline/noinline hierarchy 44/44; force-inline existence 44; controller range 58;
+// membership 59; success break 44; eligibility input, eligibility guard, saved existence output,
+// conditional merge 44 each, the same with the player accessor 44 each; long/word/byte split masks
+// 72/59/69; char/long existence with mask 72/83; existing player accessor 44; related-player result
+// 86; shared emitter index 44. Player-index accessor then NONE test 42; if-form unit 89; nested unit
+// test 89; unit declared first 89; short index 122; dword index 89; reused index/unit variable 89;
+// inline unit getter 89. Round 5: `exists && split` order 44; unit read as `exists ? ... : NONE`
+// under `if (split)` 44; object read through its own address at the second call 44; split as one
+// `exists && ...` expression 52 (188 bytes); split declared before exists 44.
+// Round 113: `exists && split` 44; split declared first 44; shared local_player_exists 44; it
+// twice with a split flag 96 (retail's BL re-test, split materialised); split test plus a
+// local_player_exists unit ternary 89. All restored.
+// Round 30 (0xbafb0's file is on another lane's list, so its parameters stay): two existence
+// tests with the player getter in the unit ternary 89 (our second call sets ESI before EAX, so
+// the unit cannot stay in ESI); player getter then NONE-test ternary 42; that with the unit test
+// nested 42; the first form with the hierarchy test nested 89; `exists && split` 44. Restored.
 // @retail 0x18d4f0
 void function_18d4f0(long object_index, char *audible, long *local_player_index)
 {

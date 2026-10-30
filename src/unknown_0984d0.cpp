@@ -308,8 +308,9 @@ PRIVATE __forceinline bool function_98fb1(c_handle_table_450cd0 *arg_0, long con
 	long local_1 = arg_1[0];
 	return function_991d0(arg_0, local_1, local_0, arg_2);
 }
-
 // score 115 (was 115): the case 1/3 loop still differs in registers: retail keeps the items
+// pointer and the index in different registers than ours, and the argument order of the
+// 0x991d0 call is not reproduced.
 // pointer in eax and the data pointer in edx and enters the loop past the items reload; ours uses
 // ecx for data and moves the handle into edx. The count == 1 branch now loads and spills like retail.
 // The volatile reads keep the loop pointers on the stack as retail does; without them the handle
@@ -333,6 +334,8 @@ PRIVATE __forceinline bool function_98fb1(c_handle_table_450cd0 *arg_0, long con
 // helper, named size/handle/result values, for or while; 38 screened) keep edi for a cursor and
 // spill the handle: indexed direct call 207f, indexed helper 208f, named size 207f, named size in
 // the test 207f, pointer cursors with a direct call 212f.
+// Generic data/unsigned item contracts/both 115/115/115; actual info record/generic data
+// 229/229; native four-word data/native unsigned items 115/115; info plus native data 229.
 // @retail 0x98fb0
 void c_handle_table_450cd0::v6(s_request_450cd0 *a1)
 {

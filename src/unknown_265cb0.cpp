@@ -489,6 +489,9 @@ real function_30bf0(vector3f *vector);
 // 191/191/195; each with consistent live seat handles 187/187/195; products or
 // positions with both squared-range expressions 195/195. Original expressions,
 // handles and complete body restored; result/range/amount and SIMD homes remain.
+// DH round 252: Existing staged cross at side/up/both; both with later up, seat-scope outputs,
+// both scopes, corresponding basis/output names, both scopes and long ordinal
+// 152/152/152/152/152/152/152/183. Original complete executable body restored.
 // @retail 0x263810
 short function_263810(point3f const *origin, long actor_index, point3f const *point, point3f const *endpoint, char posture, short mode, bool use_facing, bool *out_of_range)
 {
@@ -931,6 +934,10 @@ struct s_object_activity_flags
 // Round 244: separate activity rejection 80; uniform compound accumulator 79; both 80;
 // settings-first optional bonus 79, with rejections/compound/both 80/79/80;
 // joined rejection 80. Original conditional actor and complete body restored; input/save schedule remains.
+// Round 18 (lane 10): NULL actor then lookup re-measured 113 (header base EDI and first EBX, retail EBX/EDI);
+// on it: first declared before the actor index 113, actor/settings before the object 113, the entry copy
+// before the result 113 (identical code); plain parameter 140 (index in EBP, actor spilled to the
+// parameter's home); plain parameter read once through its address at the second call 140.
 // @retail 0x267370
 real function_267370(long volatile object_index)
 {
@@ -1767,6 +1774,9 @@ real function_2683f0(long actor_index, long node_index, short type)
 // DH round 239: Contact/player iterator and saved contact-state name subsets each
 // 528; all three with reversed independent selection declarations 529. Calibrated
 // image; original iterator/state names and complete body restored, frame still 0x84/0x80.
+// DH round 252: Independent repeated player handle/datum observations and direct current-contact result,
+// all seven subsets, then all with completed selection scope
+// 528/528/528/528/528/528/528/528. Original complete executable body restored.
 // @retail 0x266640
 void function_266640(long actor_index)
 {

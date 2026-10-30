@@ -1142,6 +1142,13 @@ struct s_squad_tree_definition
 };
 
 // score 31 (was 31): One-dword frame and first two passes agree; later parent loads still lose the retained record address.
+// Round 76: retail's passes 3/4 need the field loaded twice at register allocation and the second load
+// turned into `mov eax, ecx` afterwards (a volatile test, diagnostic only, gives the folded load into ECX
+// and the dead `add eax, edx` but keeps the second load); a noinline declaration of 0x205280 in place
+// of the in-body inline_depth pair 31 (not kept: DECOMPILING.md rules out both; a file-scope pair is
+// allowed). Parent through a ternary select 66;
+// `continue` on a missing parent in both passes 31; group and squad pointers at function scope 31;
+// the group pointer reused for the sibling walk 31.
 // parent field into ECX through [eax+edx+offset] and still forms the record pointer (add eax,edx) before
 // the compare, then copies the value to EAX; ours forms the pointer first and loads through it into EAX.
 // Tried: const current group 43; unsigned squad parent 43; unsigned group parent 63; unsigned sibling 43;
@@ -1169,6 +1176,14 @@ struct s_squad_tree_definition
 // test by index with the group pointer formed inside the block 60.
 // Initialized group-parent/squad-parent/empty-child predicates independently, in each pair
 // and all together 31 each; optional parent-record result 66. Original executable source restored.
+// Round 7 (lane 13): a noinline declaration of 0x205280 in place of the in-body inline_depth pair
+// gives the same code, 31 (not kept: no new noinline, coordinator ruling 2026-10-30).
+// Retail's ECX/dead-add shape is the field value and the record pointer in different
+// registers (as in matched 0x1b8eb0, where the call takes the value in ECX); here the value only reaches
+// EAX through `mov eax, ecx`. Pointer to the pass-4 field 31; the field spelled two ways 31 (diagnostic);
+// by-reference parent getter 31 (diagnostic); test through the global getter with the pointer through the
+// local pool, and the reverse, 57/56 (two loads, memory compare); per-pass loop counters 31; parent getter
+// at each use in pass 3 34; pass-4 squad through the local pool 31.
 // @retail 0x2009d0
 void function_2009d0(void)
 {
@@ -1499,46 +1514,54 @@ void function_2036c0(long definition_index, short mode, bool *enabled, bool *for
 
 
 bool function_1df560(short team_a, short team_b);
+
 bool function_2104b0(short output_index, point3f const *point, point3f *out);
 
-// score 58 (was 58): entry register roles differ (retail saves ebx/ebp/edi first and keeps the
-// actor pool data in ebx, ours saves esi early for the squad pool data and ebx late); the loop forms
-// the entry pointer after its first use through an edi temporary; fallback copy registers differ.
-// Tried: common y tail 122; native subtraction 121; early workspace 124; direct minimum 122;
-// late result 124; common tail with direct minimum 120; common tail with explicit clamp 122;
-// branch workspace, scalar order, native actor position, staged partial products, position base,
-// late minimum on common tail, shared scalar scope, float root, native actor getter,
-// source-field reference, distance workspace names, read-only mode, noinline, staged subtraction,
-// fallback memcpy each 120; native source-point snapshot 150; in-place nonnegative distance 122;
-// in-place transform 123; nonpositive-first 119; failure exits 118; full sum in each branch with
-// shared deltas 123; zero-default clamp 123; reordered sum terms or declarations identical;
-// accumulated sums with x,z,y deltas 124 (whole sum merged); deltas x,y,z with accumulated sums
-// 58 (kept); squad before actor 59 (index registers swap); named marker 58; offset-first entry 58;
-// branch-scoped transformed point 58; permuter 600 s found nothing.
-// Round 232: native actor receiver 58; native squad receiver 58.
-// both native receivers 58; uniform live actor fields 145.
-// uniform live squad fields 76; all live fields 147.
-// early iterator/native actor 58; early iterator/both native 58.
-// native area records 58; live squad/native area records 76.
-// Round 344: returned short cursor 58/453; returned long cursor 68/453; staged entry pointer 58/454;
-// returned short/long with staged pointer 58/68; nested admission with short/staged/both 58 each.
-// Round 347: uniform live squad admission with returned cursor/output index/both 78/76/78;
-// with library point copy alone/cursor/index/all 76/78/76/78; later minimum lifetime 76.
-// Prefix recovered through +0x54, but later pointer/register ownership still regresses; opening body restored.
-// Round 60: squad getter at each use 76 (entry code exact through +0x54; the loop's entry add then
-// splits around its first load); with the entry expression at each use 154; point per arm 69; point
-// at each use 69; first test through the entry expression 70; entry operand order, inline palette,
-// entries-base local, typed location record and an entry declared before the loop 76 each.
-// Round 407: native entry-point field reference with cached/live squad, byte/native actor
-// and assignment/library fallback copy 58/58/58/58/76/76/76/76. Entry base still splits; all restored.
+/* 0x210850 and 0x210ac0 (src/unknown_20fe20.cpp), which retail inlines in 0x204950 */
+PRIVATE __forceinline point3f *function_204a4c(s_type_c3b527 const *point, point3f *out)
+{
+    if (point->output_index != NONE)
+    {
+        if (!function_2104b0(point->output_index, &point->point, out))
+            *out = point->point;
+    }
+    else
+    {
+        *out = point->point;
+    }
+
+    return out;
+}
+
+PRIVATE __forceinline real function_204a12(s_type_c3b527 const *a, point3f const *b)
+{
+    real distance_squared;
+
+    if (a->output_index == NONE)
+    {
+        vector3f v;
+        vector3d_from_points3d(&a->point, b, &v);
+        distance_squared = (v.k * v.k + v.i * v.i) + v.j * v.j;
+    }
+    else
+    {
+        point3f point;
+        vector3f v;
+        function_204a4c(a, &point);
+        vector3d_from_points3d(&point, b, &v);
+        distance_squared = (v.i * v.i + v.k * v.k) + v.j * v.j;
+    }
+
+    return (real)sqrt(distance_squared);
+}
+
 // @retail 0x204950
-real function_204950(long actor_index, long squad_index, short mode)
+real function_204950(long squad_index, long actor_index, short mode)
 {
     real result = 3.402823466e+38F;
     byte *actor = g_4f55f0->data + (actor_index & 0xffff) * 0x888;
-    byte *squad = (byte *)squad_get(squad_index);
-    if (*(short *)(squad + 0x7e) == g_4686c4 &&
-        !function_1df560(*(short *)(actor + 0x24), (signed char)squad[0x76]))
+    if (*(short *)((byte *)squad_get(squad_index) + 0x7e) == g_4686c4 &&
+        !function_1df560(*(short *)(actor + 0x24), (signed char)((byte *)squad_get(squad_index))[0x76]))
     {
         s_squad_iterator iterator;
         function_204ec0(&iterator, (short)squad_index, 15, mode);
@@ -1546,30 +1569,8 @@ real function_204950(long actor_index, long squad_index, short mode)
         {
             byte *palette = *(byte **)((byte *)g_4e0350 + 0x16c) + (word)iterator.palette_index * 0x38;
             byte *entry = *(byte **)(palette + 0x34) + iterator.current * 0x88;
-            point3f const *point = (point3f const *)(entry + 0x24);
-            point3f transformed;
-            real squared;
-            if (*(short *)(entry + 0x30) == NONE)
-            {
-                real x = *(real *)(actor + 0x238) - point->x;
-                real y = *(real *)(actor + 0x23c) - point->y;
-                real z = *(real *)(actor + 0x240) - point->z;
-                squared = x * x;
-                squared += z * z;
-                squared += y * y;
-            }
-            else
-            {
-                if (!function_2104b0(*(short *)(entry + 0x30), point, &transformed))
-                    transformed = *point;
-                real x = *(real *)(actor + 0x238) - transformed.x;
-                real y = *(real *)(actor + 0x23c) - transformed.y;
-                real z = *(real *)(actor + 0x240) - transformed.z;
-                squared = z * z;
-                squared += x * x;
-                squared += y * y;
-            }
-            real distance = (real)sqrt(squared) - *(real *)(entry + 0x34);
+            real distance = function_204a12((s_type_c3b527 const *)(entry + 0x24), (point3f const *)(actor + 0x238)) -
+                *(real *)(entry + 0x34);
             real clamped = 0.0f;
             if (distance > 0.0f)
                 clamped = distance;
@@ -1614,7 +1615,7 @@ long function_204b20(long actor_index, short mode)
             continue;
         else
             weight = 1.333f;
-        real distance = function_204950(actor_index, squad_index, mode);
+        real distance = function_204950(squad_index, actor_index, mode);
         if (distance < 3.402823466e+38F)
         {
             if (squad_index == *(long *)(actor + 0x28))
@@ -2332,8 +2333,6 @@ void function_201ea0(void)
 }
 
 
-PRIVATE __forceinline s_squad_datum *function_201c83(s_squad_record_iterator *arg_0);
-
 // @retail 0x201df0
 void function_201df0(void)
 {
@@ -2350,7 +2349,7 @@ void function_201df0(void)
     }
 }
 
-void function_1e3400(long actor_index, long squad_index);
+void function_1e3400(long actor_index, short squad_index);
 void function_26def0(long actor_index, long owner_index);
 
 // @retail 0x204ca0
@@ -2906,43 +2905,31 @@ void function_202720(void)
     }
 }
 
-PRIVATE __forceinline s_squad_datum *function_201c83(s_squad_record_iterator *arg_0)
+struct s_squad_datum_walk
 {
-    s_squad_datum *local_0 = NULL;
-    if (g_4f55d0->active)
+    s_data_datum_iterator iterator;
+    long walk_index;
+};
+
+/* the next squad while the ai is active, or NULL */
+PRIVATE __forceinline s_squad_datum *squad_datum_walk_next(s_squad_datum_walk *walk, bool active)
+{
+    s_squad_datum *squad = NULL;
+    if (active)
     {
-        s_record_pool *local_1 = arg_0->records.data;
-        long local_2 = data_next_absolute_index_inlined(local_1, arg_0->records.index + 1);
-        if (local_2 == NONE)
-        {
-            arg_0->records.index = local_1->maximum_count;
-            arg_0->records.datum_index = NONE;
-        }
-        else
-        {
-            byte *local_3 = local_1->data + local_1->size * local_2;
-            arg_0->records.index = local_2;
-            arg_0->records.datum_index = (*(short *)local_3 << 16) | local_2;
-            local_0 = (s_squad_datum *)local_3;
-        }
-        arg_0->squad_index = arg_0->records.datum_index & 0xffff;
-        arg_0->squad = local_0;
+        if (data_datum_iterator_next_inlined(&walk->iterator))
+            squad = (s_squad_datum *)walk->iterator.datum;
+        walk->walk_index = walk->iterator.datum_index & 0xffff;
     }
-    return local_0;
+    return squad;
 }
 
-// score 43 (was 43): Frame 0x28 and rounding homes agree; missing-record tail duplication and index extension remain.
-// Earlier: the record's index is combined with the pool's base before the test; retail keeps
-// the two apart until the compare and the division. Shared guarded search 43; shared salted-index
-// constructor 43; both 43; shared datum iterator under the activity guard 126; explicit activity
-// argument with the original/search/index/both forms 43/43/43/43. Original body and helper restored.
 // @retail 0x201c80
 void function_201c80(void)
 {
     long local_0 = g_510c54->game_time;
     long period_once;
     long period_twice;
-    long time_copy = local_0;
     long period_half;
     real local_6 = (real)g_510c54->field_2_3;
     __asm
@@ -2973,17 +2960,18 @@ void function_201c80(void)
         function_2024c0();
         function_202720();
     }
-    s_squad_record_iterator local_4;
+    s_squad_datum_walk squad_walk;
     if (g_4f55d0->active)
     {
-        local_4.records.data = g_51e9d8;
-        local_4.records.index = NONE;
+        squad_walk.iterator.data = g_51e9d8;
+        squad_walk.iterator.index = NONE;
     }
-    while (function_201c83(&local_4))
+    s_squad_datum *squad;
+    while ((squad = squad_datum_walk_next(&squad_walk, g_4f55d0->active)) != NULL)
     {
-        long local_5 = local_4.squad_index;
-        if (((word)local_5 + time_copy) % period_half == 0 && (*((byte *)local_4.squad + 2) & 0x80))
-            function_203360(local_5);
+        long squad_slot = squad_walk.walk_index;
+        if (((squad_slot & 0xffff) + local_0) % period_half == 0 && (*((byte *)squad + 2) & 0x80))
+            function_203360(squad_slot);
     }
     function_201df0();
 }

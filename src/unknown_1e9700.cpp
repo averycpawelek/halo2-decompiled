@@ -70,9 +70,9 @@ void function_1ea770(byte code, long player_index, s_statborg *statistics, long 
 	*(dword *)g_4e9ae8 |= 0x20;
 }
 
-// score 107 (was 115): retail reloads g_510ca0 at each test (ours keeps it in
-// DL) and holds the old maximum's -1 in ECX with a second -1 in EAX for the
-// inner index test; ours is ten bytes shorter than retail. The two maximum
+// score 107 (was 107): no frame; enable reloads and maximum-register homes differ.
+// Four meaningful inputs agree; the converter consumes ECX and preserves player EDX.
+// Earlier: the two maximum
 // reads as `if (g_510ca0) x = i != NONE ? value : NONE` gave retail's nested
 // shape (115 -> 107). Tried: the old maximum through a call to 0x196960 (167,
 // not inlined), the team maximum as one nested ternary (110).
@@ -80,6 +80,9 @@ void function_1ea770(byte code, long player_index, s_statborg *statistics, long 
 // Native descriptor value with update/ternary/exclusive/nested clamps 151/160/160/151;
 // const descriptor counterparts 151/160/160/151. Original scalar limits restored;
 // enable reloads, maximum/register roles and the held inline boundaries remain.
+// Round 414: No frame; enable reloads and maximum-register allocation remain. Shared previous maximum
+// in long/short storage at phase/entry, with read-once or per-use consecutive field, 107 in all eight
+// forms. Independent original maxima and counter snapshot restored.
 // @retail 0x1ea5b0
 void function_1ea5b0(long player_index, s_statborg *statistics, long threshold, byte code)
 {

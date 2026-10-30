@@ -146,7 +146,7 @@ bool function_26f8f0(s_object_marker const *marker)
 }
 
 // @retail 0x26f930
-short function_26f930(long object_index, s_object_marker *markers, short capacity, long flags)
+short function_26f930(long object_index, s_object_marker *markers, short capacity, word flags)
 {
     short count = 0;
     if (flags & 1)
@@ -326,39 +326,6 @@ bool function_26fe90(long actor_index, long object_index, real distance, s_objec
     return false;
 }
 
-// score 31 (was 31): frame 0xe34 and retail length agree; collector flags, scan/selected-index
-// comparison and copy widths remain. Earlier at 154:
-// comparison and copy widths, and alignment-dot j ordering remain. Earlier at 154:
-// the flags argument to 0x26f930 is 16-bit in retail (as for 0x26fc80,
-// the flags argument to 0x26f930 is 16-bit in retail (as for 0x26fc80,
-// BLOCKED-BY 0x26f930's `long flags`), which shifts the loop padding; the alignment dot's j
-// term loads g_4687b0 first where retail loads the marker. Tried: single exit 167;
-// long best 199; long loop index 202; point names 199; vector helper 202;
-// single exit with long best 181; the helpers with the alignment written out 154 (loop
-// pointer based at +0x4c); dot3f operands swapped 154; 0.95f < dot 154; a named alignment
-// 154; the alignment through markers[i] 154 (more x87 differences); both dots written out
-// with the delta and normalize helpers 141 (14 more instructions off once aligned).
-// Input-only marker/actor/character/all receivers 154 each; wide count 106; word selection 156;
-// word induction 106; combined native scan 113; wide count with wide scan/selection/both 66/120/33;
-// actual marker cursor with wide count 67, with wide scan 63, with short count 153;
-// paired wide scan/selection with short count 31 kept; unsigned-word scan on that graph 120
-// with either count; all-wide marker cursor 30 (sub-threshold addition, discarded).
-// Candidate/delta/selected-point uninitialized entry storage, all seven subsets and all three with the native
-// marker array: 154/154/154/154/154/154/154/154. Protected query promotion, loop padding and dot allocation
-// remain
-// original declaration scopes restored.
-// Round 379: query before defaults 32; false result after providers 164; entry short count 31;
-// query/result 164, query/count 32, result/count 164, all three 164; selected-index Boolean 98.
-// Original body restored; the alignment dot agrees on this graph.
-// Round 164: native point setter at final/capture/both 51/50/166; short selection with
-// original count and wide scan 66, plus final/capture/both setters 169/170/142;
-// selected marker pointer 196. All restored; original short count and wide ordinals retained.
-// Round 279: separate geometric/weighted distances with scale/update/admission guards
-// 31/31/31/31/33/33/33/33, all at 608 bytes. Original body restored; collector promotion
-// and scan/copy widths remain.
-// Round 199: six complete selected/candidate/delta storage-name orders on the wide-ordinal graph
-// 31 each; all three uninitialized workspaces before the marker array in two orders 31/31.
-// Original body restored; protected collector promotion and scan/copy widths remain.
 // @retail 0x26f990
 bool function_26f990(long actor_index, long object_index, real distance, s_object_marker *out, point3f *point)
 {
@@ -368,21 +335,20 @@ bool function_26f990(long actor_index, long object_index, real distance, s_objec
     if (character)
     {
         s_object_marker markers[32];
+        short best = NONE;
         real best_distance = FLT_MAX;
-        long best = NONE;
         point3f best_point;
         short count = function_26f930(object_index, markers, 32, character->marker_flags);
-        for (long i = 0; i < count; i++)
+        for (short i = 0; i < count; i++)
         {
-            s_object_marker *marker = &markers[i];
-            if (dot3f(&marker->matrix.forward, g_4687b0) > 0.95f)
+            if (dot3f(&markers[i].matrix.forward, g_4687b0) > 0.95f)
             {
                 point3f candidate;
-                function_270130(marker, &actor->position, distance, &candidate);
+                function_270130(&markers[i], &actor->position, distance, &candidate);
                 vector3f delta;
                 vector3d_from_points3d(&candidate, &actor->position, &delta);
                 real length = normalize3d(&delta);
-                real dot = dot3f(&delta, &marker->matrix.left);
+                real dot = dot3f(&delta, &markers[i].matrix.left);
                 length *= (real)(3.f / (1.f + 2.f * fabs(dot)));
                 if (best_distance > length)
                 {

@@ -1773,6 +1773,17 @@ long function_1785c0(s_effect_object_marker const *marker, s_effect_datum *effec
 // with the matrix local inside the branch 107; marker forward value copy 166; marker forward
 // fields read directly 139; forward locals named x/y/z or forward_i/j/k 107/107; declarations
 // forward/position/up or up/forward/position 107/107.
+// Round 95: node copy before the matrix load 107 (758 bytes; the marker index sign extension is
+// hoisted above the matrix test, retail extends it in each arm); with a marker pointer in the else
+// arm 198 (762 bytes), the same pointer without node-first 198; node-first with pointer-sum marker
+// address 107; node-first with the else arm copying forward first 121. Original body restored.
+// Product order inside each forward row (any of six per row) 77 (identical code); the
+// tail as matched 0x1420f0's body (scale, forward, two-step cross, up, zeroed position,
+// position) through a forceinline copy 137 (its extra tuples flip the magnitude's sum
+// order and move 1.0 out of xmm7), with the node copied first 149, with a direction
+// pointer for the forward rows 158, the zero position or the inverse scale through the
+// existing setters 137/137; `up` declared just before the 0x11d000 call 77; branches
+// swapped (`if (!matrix)`) 163.
 // @retail 0x1786f0
 void function_1786f0(s_effect_object_marker *out, s_effect_marker_source const *source, short marker_index)
 {
@@ -2296,6 +2307,12 @@ event_done:
 // Round 147: update mask 202; response masks 167; both masks 215; admission returns 201;
 // returns/update 215; returns/response 200; returns/both 228; shared admission/root handle 198.
 // All executable forms restored; sources and comparisons saved.
+// Round 282: tag acquired before root query, after query and after root copies
+// 85/113/89, each with ordinary/read-only inputs; external tag references before query
+// and after copies 85/89. All restored; cached object across validity query remains.
+// Round 95: root index (0xbaf80's result) as 0x1794a0's first argument 197 (585 bytes; the index
+// stays in ESI); location stores cluster first 63, with the root index 197; chained NONE location
+// stores 63, with the root index 197. Original body restored.
 // @retail 0x1794e0
 bool __stdcall function_1794e0(long effect_index)
 {
@@ -2980,6 +2997,10 @@ void __stdcall function_17a380(s_effect_datum *effect)
 // definition lookup; same block in 0x178c80) 102, with the address-read effect index 92 (retail's
 // two exits; not kept without a match), with per-call mode 127, particle system declared first
 // 113, helper parameters reordered 92, helper fed from the color locals 93.
+// Round 204: Actual query-result carriers (tinted/multiplied): bool/byte 96, bool/long 119, byte/bool 95,
+// byte/byte 93, byte/long 124, long/bool 135, long/byte 124, long/long 138. One- and three-point reductions
+// are rejected. Frame 0x50, system/color registers and call staging remain; original query types and body
+// restored.
 // @retail 0x177040
 long __stdcall function_177040(long particle_system_index, long effect_index)
 {
@@ -3173,6 +3194,10 @@ PRIVATE inline real effect_remaining_fraction_179880(s_effect_datum const *effec
 // 361; spatial inputs 392; point/color 328; all inputs 396. All source/contracts restored.
 // Indexed point/directions/spatial/separate-spatial copies 323/331/352/511;
 // the same copies with native default-first scale 313/333/344/498. All restored.
+// Round 204: Complete transform-output boundaries: normal shared setter/named rows 88/187; point shared
+// setter alone/with normal setter/with named normal rows 94/88/187; named point rows alone/with normal
+// setter/with named normal rows 169/168/187. The two 1525-byte forms regress. Scale prefix, point Y-source
+// copy and render-call roles remain; original helpers and body restored.
 // @retail 0x179880
 void __stdcall function_179880(s_effect_datum *effect, long effect_index)
 {

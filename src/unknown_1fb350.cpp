@@ -332,6 +332,11 @@ extern "C" void _ReadWriteBarrier(void);
 // early/late saved pool and shared datum-index producer 166/157/166/157/163/156/166/157.
 // Four-field early pool reaches frame 0x14; getter checks and later allocation regress.
 // All unqualified/barrier-free trials restored.
+// Round 14: ours also keeps g_4e0300 in EBP across the loop (reloaded after each call) where
+// retail re-reads it at each use, and passes function_f0fd0's flag in DL where retail uses CL
+// (BLOCKED-BY 0xf0fd0 for that call). Barrier removed alone 161; finished arm first 149; if/else
+// finished flag 123 (same code); early continue to the release 162; deletion test in one
+// condition 127; the codec pairs as writable globals (diagnostic) change nothing.
 // @retail 0x1fb510
 void function_1fb510(void)
 {

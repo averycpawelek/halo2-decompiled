@@ -1209,7 +1209,10 @@ point3f *transform4x3f_apply_point(transform4x3f const *matrix, point3f const *p
 // its arm 78; the overflow flag declared first 70 (same code); forward/up output pointer locals 86;
 // the location pointer taken at the top 155; the marker flag tested as a byte 70 (same code);
 // diagnostics on the shared header (restored): the helper's components loaded j,k,i / k,j,i / i,k,j /
-// j,i,k / k,i,j 78/76/78/75/81 (i,j,k stays best).
+// j,i,k / k,i,j 78/76/78/75/81 (i,j,k stays best). Round 38: an explicit final return and the marker
+// after the early guard 70 each; a rotation for loop 158 (1005 bytes); a local matrix 306 (1067);
+// rotations before the point transform 124 (1027); the returned position 77; the existing scaled
+// rotation callee 391 (893); a rotation do loop 286 (890). Original body restored.
 // @retail 0xc2d00
 void __stdcall function_c2d00(long light_index)
 {
@@ -1438,6 +1441,13 @@ extern s_object_list *g_4de2f4;
 // Round 62: a point3f tint 49; alpha-only aggregate initializers 438; the last pair colour copied as
 // a whole color4f 365; a reused input pointer 357; a reused output pointer, chained alphas, a const
 // fraction handle, separate declarations, function-scope colours and const copy sources 49 each.
+// Round 16 (lane 10): the function-driven colour block as a forceinline helper of the light and
+// definition 49 (identical code); with `&light->fraction` as its pointer parameter 88, and every
+// fraction read through it 88; the fraction as a reference 49; the tint initialised at its
+// declaration 49.
+// Round 77: `real &fraction` 49 (same code); the tint copied after the first call 75; the colour copies
+// after the second call 82; the pointer for the first call only (`light->fraction` after it) 214; the
+// pointer declared with the colours 88.
 // @retail 0xc0c80
 void __stdcall function_c0c80(long light_index)
 {

@@ -2134,7 +2134,8 @@ static __forceinline long player_round_ticks(real value)
     __asm { fistp result }
     return result;
 }
-// score 701 (was 701): frame 0x4c versus 0x74; request/pointer homes and call expansion remain.
+// score 701 (was 701): frame 0x4c versus 0x74 and selective call expansion remain.
+// Earlier: frame 0x4c versus 0x74; request/pointer homes and call expansion remain.
 // frame 0x4c versus 0x74; request/pointer homes and call expansion differ.
 // Frame 0x4c versus 0x74; request/pointer homes and selective expansion remain.
 // Slot helper ordinary inline 723; view helper ordinary inline 812; sentinel result join 710;
@@ -2168,6 +2169,11 @@ static __forceinline long player_round_ticks(real value)
 // bindings 713; with activity-bound result 727, earlier bindings 727. Full-width
 // output carriers 718, earlier bindings 718; with activity-bound result 728,
 // earlier bindings 728. Original field/result lifetimes and stores restored.
+// Round 415: activity/decay/both/clock observations 723/715/702/702; activity-clock/decay-clock/all
+// 724/714/703; complete settings receiver 715; complete duration helper/both plus melee 702/702;
+// both activity result accumulators alone/with direct inputs 723/709; two real function-scope
+// requests with direct decay/decay-clock recover frame 0x74 at 2813/2812 bytes, scores 778/777.
+// Original body restored.
 // @retail 0x14f820
 void __stdcall function_14f820(long player_index, long unit_index, byte *input)
 {
@@ -2564,7 +2570,9 @@ static inline bool player_datum_iterator_next(s_data_datum_iterator *iterator)
     return datum != 0;
 }
 
-// score 103 (was 103): the global is kept in EDI here and in ESI in retail,
+// score 103 (was 103): the globals pointer stays live in EDI through both iterator loops;
+// target/point homes still differ.
+// Earlier: the global is kept in EDI here and in ESI in retail,
 // so the prologue saves the other registers and the field that is written
 // afterwards is reached through a different base register.
 // pool through a helper parameter 141; no pool local 141; busy by duplicated
@@ -2573,6 +2581,9 @@ static inline bool player_datum_iterator_next(s_data_datum_iterator *iterator)
 // in the unit test 103; the existing out-of-line root helper called with its
 // noinline removed inlines to the same 103 but regresses 0x14e200 17 -> 534 and
 // 0x31910 139 -> 201, so the attribute and the written-out walk stay.
+// Round 415: retained unit 141; existing point setter 117; both 134; unsigned retained handle 103;
+// unit/setter/both with unsigned handle 141/117/134; setter with direct component receivers 130.
+// Original body restored.
 // @retail 0x14cdd0
 void function_14cdd0(void)
 {
@@ -2722,7 +2733,8 @@ struct s_unit_flags_14d8b0
 	word bit8 : 1;
 };
 
-// score 17 (was 17): frame 0xc8 and retail length agree; tick/rate scheduling, the damage-tag
+// score 9 (was 9): late mode, reset-slot and root-pool scratch registers remain.
+// Earlier: frame 0xc8 and retail length agree; tick/rate scheduling, the damage-tag
 // pointer load and scratch registers in the later mode, slot and root blocks remain.
 // Earlier isolated damage-byte store order 19 was below the keep threshold.
 // Round 32: the trigger test through 0x11c5b0 148; the damage-type pointer read in the call 130;
@@ -2780,6 +2792,11 @@ struct s_unit_flags_14d8b0
 // 150/150/151/151; tag value after scratch store 17. Original executable body restored.
 // Round 164: separate root handle, branch-local short expiry result, tick/result/rate names,
 // all three names, joined slot result and root+slot result: 17 each. Original body retained.
+// Kimi lane 2 r37 (on the 17 body): typed time receiver with the else arm rereading the rate 11;
+// late rate with a second low-time use 13; in-place multiply 205; tag-list pointer 145.
+// Round 415: first/second/both byte countdown results 9/9/9; paired acquisition 16; long/short
+// results 114/114; byte results with short reset result/native reset flag 9/9. Original body
+// restored.
 // @retail 0x14d8b0
 void function_14d8b0(void)
 {

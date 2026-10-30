@@ -387,25 +387,30 @@ PRIVATE __forceinline real function_1de2c2(point3f const *arg_0, point3f const *
  return local_0;
 }
 
-// score 44 (was 44): the restore order after the inlined insertion differs
-// (mov ebp before mov ebx, retail restores ebx first), and retail loads the
-// side flag as a byte into cl and extends it later (mov cl, [esi + 0x21e];
-// movzx ecx, cl) where ours zero-extends it at the load, so the table
-// and the byte load uses mov cl where retail uses movzx ecx, so the table
-// address that follows is off. Tried: the projection helper for both edge
-// points without the volatiles 109; the volatiles removed 98; the side flag
-// declared first 44; the insertion helper's parameters swapped 44; the first
-// loop's exit test as an if/break 44; the first flag read in a char local 95
-// (the load becomes mov dl with a sign extension); the flag read in a byte
-// local instead of a long one 93.
-// loop's exit test as an if/break 44.
-// the loads after the first loop are in the other order and the byte load uses mov
-// cl where retail uses movzx ecx, so the table address that follows is off. Tried: the projection
-// helper for both edge points without the volatiles 109; the volatiles removed 98; the side flag
-// declared first 44; the insertion helper's parameters swapped 44; the first loop's exit test as an
-// if/break 44. Round 74 (identical code unless scored): the in-loop flag read before the volatile side
-// copy, the pre-loop index without the bool local, the bool local read first, and a byte local, all
-// 44; the flag set before the first insertion 238; a long side index in the first loop 190.
+/* projects a point onto the plane of side axis * 2 + side (src/unknown_11fc80.cpp); retail
+   inlines it into 0x1de2c0 and 0x1ddea0 */
+real *function_120810(real const *point, short axis, byte side, real *out);
+
+// score 36 (was 36): retail restores ebx (the side flag) before ebp (the surface) after the first
+// loop's inlined insertion; before the projection loop it loads the side flag with `mov cl` and widens
+// it later (ours `movzx ecx, byte ptr`); inside the loop it reads 0x21e before 0x21c; and the second
+// cross product multiplies into the near vertex's y difference (ours into the far vertex's x).
+// Tried: the projection helper for both edge points without the volatiles 109; the volatiles removed
+// 98; the side flag declared first 44; the insertion helper's parameters swapped 44; the first loop's
+// exit test as an if/break 44; the first flag read in a char local 95 (mov dl with a sign extension);
+// the flag read in a byte local instead of a long one 93. Round 74 (identical code unless scored):
+// the in-loop flag read before the volatile side copy, the pre-loop index without the bool local,
+// the bool local read first, and a byte local, all 44; the flag set before the first insertion 238;
+// a long side index in the first loop 190. Round 5: the far vertex projected through 0x120810 in place
+// of hand-scaled byte offsets 36 (kept); the side copy not volatile 74; the 0x21c read not volatile
+// 94; one side flag and edge pointer for all three loops 55; both vertices through 0x120810 74; the
+// far difference's subtractions swapped 36; the second product's factors swapped 36; a separate
+// projected point then the difference 36. Round 19: a short axis and a bool side local before the
+// third loop for the far projection 42 (the short is loaded `mov cx` and widened later, retail's shape
+// but on the axis), side then axis 42; a bool side local alone 36, a byte one 36, a byte one with
+// field_21e typed byte 36 (all fold into `movzx ecx, byte ptr`); a char side local into 0x120810's
+// byte parameter 96 (retail's `mov cl` and later `movzx ecx, cl`, but a second widening, and the
+// near vertex's in-loop side read merges into it).
 // @retail 0x1de2c0
 void function_1de2c0(s_1de2c0 *arg_0, long arg_1)
 {
@@ -452,9 +457,6 @@ void function_1de2c0(s_1de2c0 *arg_0, long arg_1)
   s_1ddda2 const *local_12 = arg_0->field_0->field_34;
   s_1ddda3 const *local_13 = arg_0->field_0->field_3c;
   long local_15 = local_14;
-  bool local_28 = arg_0->field_21e;
-  long local_16 = local_28 + arg_0->field_21c * 2;
-  long local_17 = g_440b94[local_16][0] * sizeof(real), local_18 = g_440b94[local_16][1] * sizeof(real);
   do
   {
    s_1ddda2 const *local_19 = &local_12[local_15];
@@ -465,8 +467,10 @@ void function_1de2c0(s_1de2c0 *arg_0, long arg_1)
    real const *local_24 = (real const *)&local_13[local_19->field_0[!local_20]].field_0;
    long local_22 = *(short const volatile *)&arg_0->field_21c * 2 + local_27;
    point2f local_23 = { local_21[g_440b94[local_22][0]] - arg_0->field_220.x, local_21[g_440b94[local_22][1]] - arg_0->field_220.y };
-   point2f local_25 = { *(real const *)((byte const *)local_24 + local_17) - arg_0->field_220.x,
-    *(real const *)((byte const *)local_24 + local_18) - arg_0->field_220.y };
+   point2f local_25;
+   function_120810(local_24, arg_0->field_21c, arg_0->field_21e, &local_25.x);
+   local_25.x -= arg_0->field_220.x;
+   local_25.y -= arg_0->field_220.y;
    if (local_25.y * local_23.x - local_23.y * local_25.x < 0.0f) return;
    local_15 = local_19->field_4[local_26];
   } while (local_15 != local_14);
@@ -531,10 +535,6 @@ PRIVATE __forceinline bool function_1ddea1(s_1de2c0 const *arg_0, long arg_1)
   if (arg_0->field_1c[local_0] == arg_1) return true;
  return false;
 }
-
-/* projects a point onto the plane of side axis * 2 + side (src/unknown_11fc80.cpp); retail
-   inlines it into 0x1ddea0 */
-real *function_120810(real const *point, short axis, byte side, real *out);
 
 // @retail 0x1ddea0
 void __stdcall function_1ddea0(s_1de2c0 *arg_0, long arg_1)

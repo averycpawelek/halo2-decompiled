@@ -100,14 +100,19 @@ void __stdcall function_1d6560(s_havok_component *component, s_physics_model_own
 }
 
 /* the collision layer of one of the object's rigid bodies, by object type */
-// score 96 (was 96): retail reads the type once before the kind test with the component in
+// score 96 (was 96): retail's parameter order differs from ours and cannot be changed here: retail takes
+// the component in EAX, the rigid body index in ECX, the kind in EDI and the owner and the level on
+// the stack (`ret 8`), while ours is (component, kind, owner, level, rigid_body_index). Besides that,
+// retail reads the type once before the kind test with the component in EAX and the rigid index in ECX.
 // eax and the rigid index in ecx; every one-read type form flips that pair (the caller
 // 0x1d5bf0 then differs). Type read after the rigid body 94 at 256 bytes (caller 13), first
 // 117, after headers/body/index 94 (caller 13), body then type 136, kind 7 as a ternary 104;
 // case 0 through the object_index local 91 at 256 bytes (caller 146), with the one-read type
 // 132-133; parameters reordered (rigid index first, component last) 96 / 94 (caller 13).
-// score 96 (was 89): retail pushes ebp and holds the base pointer there, ours keeps the record in esi and ecx;
+// Earlier 96 (was 89): retail pushes ebp and holds the base pointer there, ours keeps the record in esi and ecx;
 // the whole register allocation differs.
+// Round 183: shared header getter at both dispatches 96; shared byte/long type after body 94/96; early byte 106; direct-component long 105; header/typed object lookup 136/136; shared multi-use handle 105. Single-type forms lose 1d5bf0; all restored.
+// MiniMax R: both flag results computed as ((flags & 8) | 0x30) >> 2 and >> 3 instead of branching: 95 (not kept).
 // @retail 0x1d69d0
 long function_1d69d0(s_havok_component *component, long kind, s_physics_model_owner *owner, long level, long rigid_body_index)
 {

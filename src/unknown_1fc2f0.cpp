@@ -200,10 +200,26 @@ void function_1fc660(s_tracked_point *tracked, s_tracking_state const *state, s_
 }
 
 /* the tracked velocity, its change limited to half a unit per second */
-// score 56 (was 56): retail loads the float into xmm3 first and then sign
+// score 43 (was 44): the limit test is written the other way round, so the comparison matches
+// retail's operand order and its branch, but the scheduler still computes the components in the
+// order i, j, k where retail does j, i, k, so the tick conversion takes xmm4 where retail reuses
+// xmm3, the deltas land in other registers and the limit is computed before the squared length.
+// rate local with long ticks 64; the components multiplied in one expression 96; the same without
+// the tick scale local 64; the components loaded first and multiplied in place 44.
+// The three chains reordered to j, i, k 44 (the compiler schedules them itself, the code is
+// unchanged); the chains as one expression each in that order 105; the chains as separate scalar
+// locals in that order 93; the components as separate scalar locals 94 and without the velocity
+// struct 106; the limit test the other way round 43.
+// This round: the tick products reordered to j, i, k 43 (the code is unchanged); the three state
+// loads reordered to j, i, k 47 (the chain order follows the loads, but the registers move with
+// them, so retail's xmm0 = i, xmm1 = j is lost); the state velocity read into three locals and
+// the chains written in j, i, k 87; the chains as one expression each without the separate loads
+// 105 in that order and 104 in i, j, k (the loads then fold into the products and the code loses
+// 18 bytes); the tick products written into a second vector 43 (the code is unchanged). The chain
+// order follows the order of the first definitions, so it moves with the loads and cannot be
+// changed on its own.
 // extends the word into EDI, while ours writes the word with a 16-bit store
 // to DI and loads the float into xmm0.
-// score 56 (was 56): `real rate = g_510c54->rate;` read before the ticks gives
 // retail's first 0x5a bytes (rate kept in xmm3, the three components loaded
 // first) but the tick products land in fresh registers and the correction's
 // last product moves late, one instruction long: rate local with long ticks 64;
@@ -214,6 +230,9 @@ void function_1fc660(s_tracked_point *tracked, s_tracking_state const *state, s_
 // products go to new registers where retail scales in place 64 (369 bytes);
 // limit from the rate local 68; real ticks at the top 103; real ticks after the
 // rate 104; the same without the parameter reference 80.
+// Round 95: the existing local_scale3d for the rate and tick stages 99 (377 bytes), for the tick
+// stage only 43 (code unchanged), for the rate stage only 99; the velocity copied as a struct 132
+// (394 bytes); the rate read from the global at each use 99 (375 bytes).
 // @retail 0x1fc4b0
 void function_1fc4b0(s_tracked_point *tracked, s_tracking_state const *state, s_tracking_output *output)
 {
@@ -223,18 +242,29 @@ void function_1fc4b0(s_tracked_point *tracked, s_tracking_state const *state, s_
 
 	s_tracked_point *const *tracked_reference = &tracked;
 	function_1fc660(*tracked_reference, state, output);
-	short ticks = g_510c54->field_2_3;
-	velocity.i = state->velocity.i * g_510c54->rate + state->unknown38.x - state->unknown2c.x;
-	velocity.j = state->velocity.j * g_510c54->rate + state->unknown38.y - state->unknown2c.y;
-	velocity.k = state->velocity.k * g_510c54->rate + state->unknown38.z - state->unknown2c.z;
-	velocity.i *= (real)ticks;
-	velocity.j *= (real)ticks;
-	velocity.k *= (real)ticks;
+	real rate = g_510c54->rate;
+	long ticks = g_510c54->field_2_3;
+	real tick_scale = (real)ticks;
+	velocity.i = state->velocity.i;
+	velocity.j = state->velocity.j;
+	velocity.k = state->velocity.k;
+	velocity.i *= rate;
+	velocity.i += state->unknown38.x;
+	velocity.i -= state->unknown2c.x;
+	velocity.j *= rate;
+	velocity.j += state->unknown38.y;
+	velocity.j -= state->unknown2c.y;
+	velocity.k *= rate;
+	velocity.k += state->unknown38.z;
+	velocity.k -= state->unknown2c.z;
+	velocity.i *= tick_scale;
+	velocity.j *= tick_scale;
+	velocity.k *= tick_scale;
 	delta.i = velocity.i - state->velocity.i;
 	delta.j = velocity.j - state->velocity.j;
 	delta.k = velocity.k - state->velocity.k;
 	limit = g_510c54->rate * 0.5f;
-	if (limit * limit <= length_sq3f(&delta) &&
+	if (!(limit * limit > length_sq3f(&delta)) &&
 		tracked->location.unknown0 == state->location.unknown0 &&
 		tracked->location.unknown2 == state->location.unknown2)
 	{

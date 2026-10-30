@@ -4,11 +4,70 @@
 /* UNKNOWN_03FDF0.CPP: cached light geometry and material pass dispatch */
 
 #include "unknown_11c920.h"
+#include "visibility_storage.h"
+#include "view_context_storage.h"
 #include "globals.h"
 #include "index_cache_storage.h"
 #include "unknown_0494b0.h"
 #include <string.h>
 #include <xtl.h>
+
+struct s_planar_camera_source;
+struct s_planar_camera;
+struct s_timed_effect_globals;
+void function_3d600(void);
+void function_441b0(s_planar_camera_source const *source, s_planar_camera *state, byte const *view);
+s_timed_effect_globals *function_01fd20(s_timed_effect_globals *result);
+s_bit_vector_pool *function_1320f0(long mode, long pass, bool enabled, long extra,
+	byte const *camera, byte const *plane, real distance, void *filter, real offset, long identifier);
+void __stdcall function_2cbc0(bool enabled);
+void function_44720(void);
+
+// @retail 0x3f2c0
+void function_3f2c0(s_planar_camera_source const *source, byte const *view, long object_index, long identifier)
+{
+	long const *identifier_reference = &identifier;
+	long identifier_copy = *identifier_reference;
+	(void)identifier_copy;
+	byte camera[0x1bc]; // a whole s_planar_camera: function_441b0 fills 0x1bc bytes
+	real offset = 0.0f;
+	function_441b0(source, (s_planar_camera *)camera, view);
+	byte *effect = (byte *)function_01fd20(0);
+	bool enabled = effect && effect[0x3c];
+	if (enabled)
+	{
+		offset = *(real *)(effect + 0x40) - *(real *)(camera + 0x70);
+	}
+	function_3d600();
+	s_bit_vector_pool *data = function_1320f0(0, 1, enabled, 0, camera,
+		camera + 0x60, 1024.0f, NULL, offset, g_4b9ee4);
+	if (object_index != NONE)
+	{
+		struct s_entry_list_view
+		{
+			long maximum;
+			word count;
+			short *shorts_b;
+			long *longs_a;
+			long *longs_c;
+			short *shorts_d;
+		};
+		s_entry_list_view *list = (s_entry_list_view *)data->lists[2];
+		bool found = false;
+		for (long i = 0; i < (short)list->count && !found; ++i)
+			found = list->longs_a[(short)i] == object_index;
+		if (!found && list->count < list->maximum - 1)
+		{
+			list->longs_a[list->count] = object_index;
+			list->shorts_b[list->count] = 0;
+			list->longs_c[list->count] = 0;
+			list->shorts_d[list->count] = NONE;
+			++list->count;
+		}
+	}
+	function_2cbc0(true);
+	function_44720();
+}
 
 struct s_record_source;
 struct s_cache_record;
@@ -104,6 +163,21 @@ void function_4a1e0(s_view_source *source, s_view_camera *camera, long resource_
 // 492 bytes); entries indexed by the counter 164; separate cursor pointer 54; with the
 // current stored first 140; block pointer declared inside the if 151; index head with the
 // block pointer only for the loop 155; count read once into a short local 177 (480 bytes).
+// Round 35, all on the indexed form: the cursor set after the selection with the copy source
+// indexed 164 (retail's loop, saves and reload at the join, but both parameters on the stack);
+// one variable for first and the loop index 159 (retail's head exactly: index in edx, count in
+// ax/eax, zero in ecx, entries in edx; the index then lives in ebp and mode is spilled, where
+// retail spills first and keeps mode in ebp); `first + n` with `entries[n]` 158; first by a
+// chained assignment 158; the copy's destination through the stored current 164; the loop
+// index set before the selection 162 (cache index in ecx); the selection as if/else or as the
+// reversed ternary 164/164; selection, n/index, cursor or first declared early 164 each; the
+// cursor before the copy with one index variable 163; the count in a short local read before
+// the clears 164. The two g_4c1a80 statements (the same field as g_4c1a48[2].flags) removed:
+// same code.
+// score 54 (was 54): count, mode and first-index homes conflict across the inline copy.
+// Metadata pointer plus entry-table expression and early index 154; shared-scale entries 159;
+// direct metadata with early index 159; const first 146; direct copy with late entries 163;
+// first address direct/reference 163 each; early selection 169. Original block body restored.
 // @retail 0x402b0
 void function_402b0(long cache_index, long mode)
 {
@@ -113,7 +187,6 @@ void function_402b0(long cache_index, long mode)
     g_4c1a48[2].count = 0;
     g_4c1a48[2].first = 0;
     g_4c1a48[2].flags = 0;
-    g_4c1a80 = 0;
     s_render_index_cache_block const *block = &g_4c62f8.records.blocks[cache_index + 1];
     if (block->count > 0)
     {
@@ -159,7 +232,6 @@ void function_402b0(long cache_index, long mode)
             ++index;
             ++entries;
         }
-        g_4c1a80 = g_4c1a48[2].flags;
     }
 }
 

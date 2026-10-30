@@ -171,15 +171,42 @@ static __forceinline bool structure_bsp_collision_available()
         *(long const *)((byte const *)g_4e0344->bsp + 4) == *(long const *)((byte const *)g_4e0348 + 8);
 }
 
-// score 68 (was 68): Exclusion BL and source-slot join still differ. Read-only object 68;
+// score 68 (was 68): VC threads the exclusion flag on every edge (retail keeps it in BL, so the
+// collision lives in its parameter slot: stored after the requery, reloaded after the model
+// query). Read-only object 68; unsigned object handle 68; word query buffer 68; native collision
+// record 71; external triangle reference 68; source publication 68; byte result merge 68; query
+// workspace names 68; model inline/noinline 68/68; state inline 68; both contracts 68; probe
+// result 68; model result 68; final found result 111; triangle inline 68; the collision re-read
+// from the parameter at the join 68 (with a block-local flag 68); the flag as one && expression
+// tested twice, with returns 68; the same with an else-if tail and a final else for the no-object
+// case 71 (286 bytes); assigned with the && expression, tests unchanged 68; an inline helper for
+// the scenery test stays out of line and is threaded 113/111; a switch on the object type with
+// the scenery case falling into the general case 68, or the flag set in a one-case switch 68; the
+// flag from the && expression with the model query nested under `if (!excluded)` 68; the requery
+// in an inline helper that updates the collision through its address 90; found cleared in the
+// scenery arm with no flag 68.
+// Exclusion BL and source-slot join still differ. Read-only object 68;
+// VC threads the exclusion flag on every edge (retail keeps it in BL, so
+// &triangle->c takes EDI and the source slot is reloaded after 0xbf9a0), and the byte result
+// is converted with setne. Read-only object 68; unsigned object handle 68; word query buffer 68;
+// native collision record 71; external triangle reference 68; source publication 68; byte
+// result merge 68; query workspace names 68; native record retested with byte result storage;
+// model inline 68; model noinline 68; state inline 68; both contracts 68; probe result 68; model
+// result 68; final found result 111; triangle inline 68. The collision re-read from the
+// parameter at the join 68 (with a block-local flag 68); the flag as one && expression tested
+// twice, with returns 68; the same with an else-if tail and a final else for the no-object case
+// 71 (286 bytes); assigned with the && expression, tests unchanged 68; an inline helper for the
+// scenery test stays out of line and is threaded 113/111. Round 76: bool result 78 (262 bytes:
+// setne gone, aligned closer); the flag set in both arms with `if (excluded) goto done;` 68, and
+// with a bool result 78; a pointer parameter passed by address to an inline probe helper 134
+// (LTCG drops the address: collision in EAX, 0xd2bb0 22); the by-value source passed by address
+// to that helper 86/76 (bool/byte result; 0xd2bb0 5).
+// Exclusion BL and source-slot join still differ. Read-only object 68;
 // unsigned object handle 68; word query buffer 68; native collision record 71;
 // external triangle reference 68; source publication 68; byte result merge 68;
 // query workspace names 68. Native record retested with byte result storage.
 // BL exclusion and source-slot reload remain; model inline 68; model noinline 68; state inline 68; both contracts 68; probe result 68; model result 68; final found result 111; triangle inline 68.
 // Earlier: VC threads the exclusion flag on every edge. The collision re-read from the
-// parameter at the join 68 (with a block-local flag 68); the flag as one && expression tested
-// twice, with returns 68; the same with an else-if tail and a final else for the no-object case
-// 71 (286 bytes); assigned with the && expression, tests unchanged 68; an inline helper for the
 // scenery test stays out of line and is threaded 113/111.
 // Multi-consumer object policy, short/long and bool/byte found in object scope 117/117/116/116;
 // function-scope policy 68/68/61/61. Long policy reaches 286 bytes but its seven-point gain
@@ -198,6 +225,13 @@ static __forceinline bool structure_bsp_collision_available()
 // flag from the && expression with the model query nested under `if (!excluded)` 68; the requery
 // in an inline helper that updates the collision through its address 90; found cleared in the
 // scenery arm with no flag 68.
+// Round 78: the flag assigned `excluded = function_10a0b0(...) != 2` inside the type test, with
+// `if (excluded) goto done` or `if (!excluded)` guards 54/54 (286 bytes, but aligned worse: setne
+// and the threaded exit stay); the object part in an inline helper returning `!excluded` 106
+// (keeps the flag in BL and the join test, adds a sete); the final test nested in the requery
+// arm 77; `return function_14a8e0(...)` with an && flag 77 (263 bytes). A compile-only screen of
+// 177 flag/guard/tail forms threads the 0x10a0b0 compare in every one; only a computed value in
+// the join (a negation, a widening, a store) keeps retail's un-threaded flag test.
 // @retail 0x14b120
 bool function_14b120(s_surface_query_source source, void *surface)
 {
@@ -482,7 +516,7 @@ void function_23ac30(s_vertex_source_23ac30 const *source, long index,
 /* the collision record's object index, re-read at each use as retail does (no local copy) */
 #define COLLISION_OBJECT_14A8E0 (*(long *)((byte const *)collision + 0x40))
 
-// score 78 (was 78): with the part list read through its 0x48-byte range records and the part
+// score 70 (was 70): with the part list read through its 0x48-byte range records and the part
 // offset read at each use, only the model/collision registers (EBX/EDI swapped), the lookup address
 // (retail keeps it in ESI for the second call) and BLOCKED-BY 0x11e800's argument registers differ.
 // Round 8 (lane 10): range-record list 95 (kept); part offset at each use 78 (kept); section groups
@@ -556,9 +590,21 @@ void function_23ac30(s_vertex_source_23ac30 const *source, long index,
 // in esi/edx/ecx, retail edx/ecx/esi), so both forms wait on that contributor body.
 // Round 202: Native mesh node/strip/parts fields, seven combinations, and all with const receiver 78/78/78/78/78/78/78/78 fast.
 // Original executable source restored. Frame 0x58 agrees; model/collision roles, bounds acquisition, lookup-address reuse and triangle-test inputs remain.
+// Round 76: the bounds read moved down to just before the lookup 70 (kept: model/collision
+// take retail's EBX/EDI; left are the bounds read's place, the lookup-address reuse and
+// BLOCKED-BY 0x11e800's registers); the bounds read after the object re-read 77, after the
+// point copy/transform count 212, after the lookup initialize 105; const model/section/table
+// views 78; bounds declared with the model, assigned in place 78; after the kept change: the
+// surface lookup through an inline (lookup, position) helper 69, forced inline 262 (inlines
+// 0x1efd80); lookup declared at the top 70; lookup declared before the bounds read 70;
+// separate local for the transform object 70.
 // Round 194: shared first/second/both object acquisitions, node-matrix accessor alone,
 // either/both acquisitions with that accessor and shared headers with it 78 each.
 // Model/collision homes, bounds timing, lookup reuse and triangle-call inputs remain.
+// Round 78: the work after the lookup nested under `if (lookup.initialize(...))` 70; the lookup
+// guard as `return result` 231; a const bounds pointer 70; the lookup and surface lookup in their
+// own block 70; section groups from the section index local 157. Diagnostic: the bounds read
+// before the geometry-block call still gives 9 (left: the lookup address, 0x11e800's registers).
 // @retail 0x14a8e0
 bool __stdcall function_14a8e0(s_structure_collision_result const *collision,
 	long model_index, s_structure_lightmap_triangle *triangle)
@@ -588,7 +634,6 @@ bool __stdcall function_14a8e0(s_structure_collision_result const *collision,
 		if (section_index == 0xff) goto done;
 		byte *section = *(byte **)(model + 0x28) + section_index * 0x5c;
 		if (!function_12de70((s_geometry_block_info *)(section + 0x38), 3)) goto done;
-		s_vertex_bounds_23ac30 const *bounds = *(s_vertex_bounds_23ac30 const **)(model + 0x18);
 		object = *(byte **)(g_4e0300->data + (COLLISION_OBJECT_14A8E0 & 0xffff) * 12 + 8);
 		point3f point = collision->point;
 		long transform_count = *(short *)(object + 0x114) / sizeof(transform4x3f);
@@ -599,6 +644,7 @@ bool __stdcall function_14a8e0(s_structure_collision_result const *collision,
 			matrix = (transform4x3f *)(*(byte **)(model + 0x4c) + (*(short *)((byte const *)collision + 0x46)) * 0x60 + 0x28);
 			function_142700(matrix, &point, &point);
 		}
+		s_vertex_bounds_23ac30 const *bounds = *(s_vertex_bounds_23ac30 const **)(model + 0x18);
 		s_lookup lookup;
 		if (!lookup.initialize(COLLISION_OBJECT_14A8E0)) goto done;
 		byte *surface_set = (byte *)function_1efd80((s_table_holder *)&lookup,

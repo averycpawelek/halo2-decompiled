@@ -199,6 +199,10 @@ static __forceinline long game_seconds_to_ticks_round(real seconds)
 // in EBX it arrives in EAX (retail). Retail reloads the state flags after the first 0x221810 call (its
 // compiler treats that call as opaque); ours forwards them in a callee-saved register across it,
 // which pushes the request into EBP. BLOCKED-BY 0x21d110 (its tag/state registers) and 0x221810.
+// Round 410: Joint source/object, source/platform, object/platform and all-three two-use header
+// snapshots 110/110/110/110; each with priority from the request 109/109/109/109 (472 bytes).
+// Reduced-image context differs; all one-point gains are rejected. All restored; first class-query
+// expansion, header homes and playback convention remain.
 // @retail 0x189fe0
 long function_189fe0(s_sound_request const *request, long tag_index)
 {
@@ -580,6 +584,15 @@ long function_1891d0(long object_index, long marker_name, s_sound_label_play con
 // Play first/middle parameter orders 51/51 (same code); play fields read at entry 54 (play
 // becomes a register argument, in eax). Retail keeps the object in esi and play in edi; ours
 // needs esi for 0xba300's location argument (BLOCKED-BY 0xba300's convention).
+// Round 6: unchanged; the first difference (+0x7, play stacked and EBP saved) still comes from
+// 0xba300's object EAX / location ESI arguments (retail: object ECX, location EAX).
+// Round 282: shared velocity setter with global/pointer/value inputs 63/63/95;
+// point plus velocity setters 75; partial point/point+direction construction with
+// velocity setter 96/90; velocity before compression 63, with both setters 75.
+// All restored; root-location registers, saves and stacked playback input remain.
+// Round 30: named result with one return 51; velocity/root/point/compression 52;
+// point/velocity/root/compression 49; compression/velocity/point/root 52;
+// point/root/velocity/compression 52. Restored; still BLOCKED-BY 0xba300's convention.
 // @retail 0x189210
 long function_189210(long object_index, long marker_name, s_sound_label_play const *play)
 {

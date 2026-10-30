@@ -483,7 +483,28 @@ static inline void input_counter_set_inlined(long c, long a, long b, long value)
 // engine lookup hoisted 29; carrier with the mask compare swapped 29 (the mask load leads
 // the compare but is still not shared with the update); two-width union view of the mask 90;
 // union with a named wide copy 90; word local with a promoted copy 134; updated mask
+// computed before the branch 133; union plus carrier 91; word mask with the field stored
+// directly and the OR uncast (either operand order) 77, the word mask read straight from the
+// field 129 (re-read after the loop), present not volatile 102 (63 with the word mask), the
+// loop as a force-inlined helper writing through mask pointers 139, the engine lookup named
+// first on the word form 77, carrier on the word form 78.
 // computed before the branch 133; union plus carrier 91.
+// Round 94: a plain `word old_team_mask` gives retail's entry (`mov cx`, word store), but the compare
+// then reads the mask from memory where retail reloads it into ECX before the first branch and
+// shares it with the update (one instruction short, the rest shifts) 77; with the team-bit carrier 83;
+// the mask read and stored through globals 129; `*team_mask |= present` 130; compares as
+// old != new 33.
+// Retail reloads the word mask once into ecx before the first test and ORs present into
+// it for the store. `*team_mask |= present_teams` (the old mask then only compared, word
+// or dword; or the field re-read in the test) 130/130/130; word mask with the tests'
+// operands swapped 78, without the store's cast 77; word old playing mask too 59; word
+// mask with present non-volatile 63 (dword 102); `present = present | bit` 32 (identical);
+// the bit from `player->team` 46.
+// computed before the branch 133; union plus carrier 91; word mask with the field stored
+// directly and the OR uncast (either operand order) 77, the word mask read straight from the
+// field 129 (re-read after the loop), present not volatile 102 (63 with the word mask), the
+// loop as a force-inlined helper writing through mask pointers 139, the engine lookup named
+// first on the word form 77, carrier on the word form 78.
 // @retail 0x158140
 void function_158140(void)
 {
@@ -2414,21 +2435,22 @@ void function_15b980(bool skip_event)
 void function_1e9df0(long field, long counter, long team, s_statborg *statistics, short delta);
 void function_1e9ce0(long player_index, long counter, s_statborg *statistics, long field, long delta, bool by_team);
 
-// score 44 (was 44): frame 0x10 agrees; statistics-call setup, event scratch registers and options reload remain.
-// value-initialized iterator 102; shared iterator record 44; immutable mode/old score 44;
-// current-score lifetime 44; frame pointer 118; global optimization disabled 219; size preference 191; record reference 44.
-// score 44 (was 44): statistics setup, event scratch rotation and options reload remain.
-// Final aggregate acceptance 106; final rejection 106; old-score retention 215;
-// old-score-first result 51; post-event winner guard 44; retained result/winner guard 215;
-// acceptance with immutable receiver 106; old-score-first acceptance 105.
-// statistics setup, event scratch rotation and cached options remain;
-// statistics reference/narrow delta 44/44; event-only delta 116; event-mode snapshot 44;
-// combined selection 78; aggregate if arms 50 (retail length); shared index initialization 44; improvement value 57.
-// score 44 (was 44): BLOCKED-BY 0x1e9df0 (its first reads, counter/field/statistics, set the
-// ecx/eax/edx load order here) and BLOCKED-BY 0x1967d0 (the options reload after it follows
-// what the compiler thinks 0x1967d0 writes: a 0x4e6948 store there gives the reload).
-// Statistics getter at the call 109; old score through the getter 111; named score-to-win 44;
-// one change local for all calls 125; early equal-score return 44.
+// score 44 (was 44): frame 0x10 agrees. BLOCKED-BY 0x1967d0 (the options reload after it follows
+// what the compiler thinks 0x1967d0 writes: a 0x4e6948 store there gives the reload) and the
+// 0x1e9df0 call's register setup (retail sets counter, field, then statistics last; ours
+// statistics first; 0x15b3a0's retail order fits the current declaration, so no consistent
+// parameter reorder gives both).
+// Value-initialized iterator 102; shared iterator record 44; immutable mode/old score 44;
+// current-score lifetime 44; frame pointer 118; global optimization disabled 219; size
+// preference 191; record reference 44; final aggregate acceptance 106; final rejection 106;
+// old-score retention 215; old-score-first result 51; post-event winner guard 44; retained
+// result/winner guard 215; acceptance with immutable receiver 106; old-score-first acceptance
+// 105; statistics reference/narrow delta 44/44; event-only delta 116; event-mode snapshot 44;
+// combined selection 78; aggregate if arms 50 (retail length); shared index initialization 44;
+// improvement value 57; statistics getter at the call 109; old score through the getter 111;
+// named score-to-win 44; one change local for all calls 125; early equal-score return 44;
+// short-cast delta at the 0x1e9df0 call 44; change local for that call only 44; delta + old
+// score 44; mode read before the statistics getter 85; const statistics pointer 44.
 // @retail 0x15b650
 void __stdcall function_15b650(long team, long delta)
 {
@@ -4136,7 +4158,16 @@ struct s_score_zone_view
 void function_15fe20(long team_index, color3f *color);
 // score 88 (was 88): frame 0x48c, four bytes long; two team-color copies (retail loads all three words, then
 // stores through ESI/EDI), the -1 register reused for the unit/slot NONE tests, a byte shift count
-// and scratch-register renames remain.
+// and scratch-register renames remain. The copies are retail's when 0x7f720 returns color3f by
+// value (compile-only), or with each copy through a color3f local initialised from the call: 46
+// (both), 65 (rival only); on that, the individual best/best-score defaults before the
+// player-index store and the rival text cleared before the rival's player lookup 42 (44 each),
+// plus a byte shift count 41; the same two reorders alone 85. Weapon section on the 41 form: the
+// weapon NONE default first inside the unit block, or before it, or after the slot read 77
+// (2688 B, compares stay immediate); existing unit_get_current_weapon 77; 0xcbd50 called 77;
+// named unit index with the default before the test 72 (with the helper 72, with 0xcbd50 72);
+// default at the top of the function or of the player block 711/697/721; selection as if/else
+// either way or inverted ternary 41; default plus a repeated unit test around the charge 86.
 // Earlier: frame 0x48c and early scalar homes agree; text/color/zone allocation and charge spills differ.
 // Fast bounded copies: team pair 513, individual pair 616, rival pair 482 (plain 485);
 // unsigned player 541, best-store order 542; rival pair plus earlier rounds 478 (plain 481).

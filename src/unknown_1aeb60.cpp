@@ -361,6 +361,9 @@ short *function_e70b0(long unit_index, short *value);
 // Round 404: Native slot data block, then countdown/mode/elapsed combinations and entry cast order, all
 // eight 49 at 443/443. Data block canonicalizes unchanged; complete original body and type restored.
 // Actor/index and final-call allocation remain.
+// Round 114: final mode test as a call to the existing 0x1f86f0 138 (kept out of line); through the
+// existing actor pointer 132; nested timer test 49; nested final test 49; named action value 49;
+// a 26-try permuter run found nothing below 49.
 // @retail 0x1afb30
 void __stdcall function_1afb30(long actor_index, s_slot *slot)
 {

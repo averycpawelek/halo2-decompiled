@@ -27,7 +27,7 @@ transform4x3f *function_ba160(long object_index, transform4x3f *matrix);
 void function_11bed0(s_location *location, point3f const *point);
 short __stdcall function_bb050(long mask, dword type_mask, void const *location,
     point3f const *position, real radius, long *objects, short maximum_count);
-short function_26f930(long object_index, s_object_marker *markers, short capacity, long flags);
+short function_26f930(long object_index, s_object_marker *markers, short capacity, word flags);
 short function_26fbf0(long object_index, s_object_marker *markers, short capacity, long flags);
 short function_26fe20(long object_index, s_object_marker *markers, short capacity, long flags);
 bool function_26f8f0(s_object_marker const *marker);
@@ -244,6 +244,9 @@ void __stdcall function_2c0d60(vector3f const *previous_direction, long actor_in
 // Round 176: Immutable declaration-produced actor with original/ordinary settings/ordinary unit/both
 // input homes 957/991/978/989; with independent location and raised point 973/993/949/982.
 // All original actor publication, query storage, qualifiers, operands and complete body restored.
+// Round 37: normalized/object, normalized/sphere and all relative-position workspaces shared per
+// object 866/867/867, at entry 866/867/867; all with independent query storage 889, ordinary actor
+// pointer 959. Original vectors, query record, qualifiers, operands and complete body restored.
 // @retail 0x2c0d60
 void __stdcall function_2c0d60(vector3f const *previous_direction, long actor_index, byte flags,
     s_path_settings const *volatile settings, s_obstacle_list *obstacles, s_obstacle_list *blocking_obstacles,
@@ -1161,6 +1164,9 @@ real function_11cc90(vector2f const *a, vector2f const *b);
 // product terms/result with terms/scale with terms/all/all with if-form clamps
 // 359/470/466/172/359/470/466/471. Native scale input loses both matched geometry siblings;
 // all original helper inputs, qualifier, branch returns, arithmetic and body restored.
+// Round 37: one completion goto with bool/byte/char/short result assigned by the zero-length
+// guard 172/189/189/194; default success at entry 414/421/421/429. Original returns, geometry,
+// helper calls, operation trees and first-side qualifier restored; early true host still differs.
 // @retail 0x2c2a70
 bool function_2c2a70(point2f const *origin, point2f const *endpoint,
     point2f const *first, point2f const *second, point2f const *target)
@@ -1377,6 +1383,9 @@ bool function_26c4e0(s_pathfinding_data *pathfinding, s_type_c3b527 const *start
 // after successful selection alone/inline/noinline 502/502/502; the same three with the immutable
 // current type retained across all uses 502/502/502. All original declarations, address and
 // metadata lifetimes, native record snapshot, qualifiers and complete body restored.
+// Round 37: native member-produced record, const/mutable and before/after the pure output address,
+// 494/493/494/493; complete coordinate member producers 469/464/469/464. Query/radius homes recover,
+// but the 0x11c frame remains; original complete record copy and body restored.
 // @retail 0x2c2060
 void __stdcall function_2c2060(s_type_f17a25 *query, short count, s_path_step_view const *points,
     short *result_count, s_path_step_view *result, bool *complete)

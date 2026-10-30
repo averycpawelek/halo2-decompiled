@@ -1402,6 +1402,9 @@ int __cdecl matchmaking_compare_value(void const *a, void const *b)
 // J185: existing query noinline boundary, alone/shared output/indexed tails/both 116/123/162/161;
 // native byte query return at all declarations, same four forms 116/123/162/161.
 // All query declarations, provider source and original target body restored; no new checked loss beyond the preview.
+// Round 256: Compaction candidate before predicate in first/second/both scans 119/118/121; with shared
+// mode-one query 127/125/129; both scans with indexed tails, separate/shared query 160/159. All
+// restored.
 // @retail 0x2514fd
 void c_matchmaking_list::v3()
 {
@@ -1947,6 +1950,11 @@ extern dword g_54d5b8;
 // bytes). Tried: that copy with the dialog set before the switch, inside the guard,
 // or with a goto to the store 81; case 4 as `if (!g_51ec99) {...; break;} goto
 // shown;` 37; `case 1:` with the default 36.
+// Lane 11 r12: a NONE dialog for the flagged case 4 with `if (dialog != NONE)`
+// before the call (assigned then cleared, a ternary, an if/else) 36/62/37: VC
+// threads the test away and keeps the same layout; case 4 first or the default
+// last 36 (identical code: case blocks are laid out the same whatever their
+// source order).
 // Round 186: dialog result at entry long/int/dword/unsigned-int, native-scope int/dword/unsigned-int
 // 36 each; full unsigned state 36. Original body restored; shared tail placement remains.
 // @retail 0x250804
@@ -2434,6 +2442,9 @@ static __forceinline long local_player_find(long const *local_list, long player)
 // Round 184: shared count 301; result-first voice 129; native team byte 165; count/voice 307;
 // scoped text/all receivers 111/111; late team-result constants 171; complete combined graph 307.
 // Original count, receivers, widths and outputs restored.
+// Promoted first-loop team with numeric/reverse and absent-first/last switch cases 238 at 915 bytes
+// in all four orders; default-result initialization on each 234 at 913. Scalar homes stay
+// displaced; original short team and switch restored.
 // @retail 0x25042d
 void function_25042d(c_session_lobby_screen *screen, long valid, s_session_flags_view *session, long *players, long *local_list, long count)
 {
@@ -2812,6 +2823,10 @@ PRIVATE inline void squad_item_set_team(s_widget_item *item, short team)
 // Round 183: existing name/appearance/team payloads before validity bits, all seven nonempty
 // combinations 100 each; all three with one current-item receiver 293. Original setter bodies
 // and complete target restored; receiver reload, row query and animation homes remain.
+// Round 204: Real source-table cursors: names 106; appearances 105; both 106; teams 106; names/teams 108;
+// appearances/teams 105; all three 107; all three plus destination cursor 294 at 889 bytes. The seven
+// source-only forms stay 876 bytes. Original indexed body, helper bodies and memcpy restored; receiver
+// reload, row/query and animation roles remain.
 // @retail 0x253339
 void c_network_squad_browser_screen::v3()
 {

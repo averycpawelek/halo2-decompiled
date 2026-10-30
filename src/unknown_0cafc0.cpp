@@ -161,6 +161,9 @@ point3f *function_b9ef0(long object_index, point3f *result)
 }
 
 // score 2 (was 2): only constant-one and crouching-height load scheduling remains; frame 0xa4 and all other instructions agree.
+// Round 73: definition-pointer rename 2; direct explicit read-add-store 17; explicit store on the two-local graph 2;
+// standing-only/crouching-only temporaries 2/2; named total with explicit store 2; early constant-one 2;
+// raw crouching-height load before the calls 12. Opening graph restored.
 // Earlier: frame 0xa4, entry, collision block and marker-branch layout agree; the two
 // height loads are swapped, the seated object goes to EDX (retail EBP, so the marker temporaries
 // rotate one register off), and the parent branch loads the tag table before the object table

@@ -164,6 +164,11 @@ PRIVATE inline void decal_project_corner_17d9a0(transform4x3f const *matrix, rea
 // function_120810 for each corner projection 189 at 966 bytes, though its inlined lookup is retail's
 // exact sequence (start from it: the products then reorder).
 // Existing projection with all parallel products 191; point setter 189; bound-first products 189; matrix/bound/basis references 189/189/189; all parallel offsets 185; setter plus matrix reference 189. Restored.
+// Overlap-safe matrix/bounds/both/normal/matrix-normal/bounds-normal/all transfers
+// 253/237/273/210/262/234/282; all plus existing final projection 294. Original body and private helper
+// restored.
+// Round 288: complete shared corner-vector producers, forward/left affine and two-scale sums,
+// each with private/shared final projection 265, 250, 265, 250, 265, 241, 265, 241. Original body and helper restored.
 // @retail 0x17d9a0
 void function_17d9a0(transform4x3f const *matrix, real const *bounds, s_decal_quad_17d9a0 *quad)
 {
@@ -632,6 +637,9 @@ PRIVATE __forceinline void decal_rotate_vector_17fd20(vector3f const *forward, v
 // Round 273: independent first/candidate/selected plane declarations at function entry,
 // seven subsets 564 each; all three plus the quad declaration at entry 564. Original
 // declarations and complete body restored; definition/count/plane homes still differ.
+// Round 38: Staged cross product, with cross lifetime local/group and sign expression/branches,
+// 559/559/559/559 fast at 3631 bytes, frame 0x21e4; each with common angle result 618
+// at 3632 bytes. Five-point best rejected; original cross call, angle helper and body restored.
 // @retail 0x17fd20
 void function_17fd20(s_decal_mesh_view const *mesh, long tag_index,
 	s_decal_output_17dd80 *output, s_decal_projection_17fd20 *projection, s_decal_placement const *placement)

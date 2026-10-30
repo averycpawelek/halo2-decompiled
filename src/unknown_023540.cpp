@@ -3845,6 +3845,13 @@ void function_2fd90(s_2f800_view const *view, box2f const *clip, byte *out);
 // a different order with their arguments set up differently. The tail is
 // 0x13680's convention (retail passes the flag in bl; BLOCKED-BY 0x13680);
 // the flag passed from the frame's copy 34.
+// Round 93: both store orders (the counter before the kind byte, the flag
+// clear between the two block copies) are retail's once g_4ba038 and
+// g_4ba010 are address-taken (diagnostic only, 26): retail keeps them in an
+// address-taken struct, whose definitions are in other lanes' files. Flag
+// clear before the first copy 34; counter increment one statement earlier
+// 34; kind stored after the sky index 37; flag clear as the first store 34;
+// camera default as a named source local 153.
 // Round 187: Native mode-word/auxiliary-word/final-byte subsets 1/2/3/4/5/6/7 and all unsigned-mode bits 34 each; auxiliary-word forms lose caller. Original declarations restored; shared-store alias and protected flag convention remain.
 // @retail 0x2ba10
 void function_2ba10(s_2f970_view const *view, long cluster, long player,

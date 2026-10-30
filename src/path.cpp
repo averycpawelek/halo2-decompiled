@@ -381,7 +381,8 @@ bool function_270750(byte *buffer, long unknown, s_actor_point_target const *tar
 	return result;
 }
 
-// score 349 (was 349): Frame 0xe4 agrees; maximum/node acquisition order, clearing, flags and vector scheduling differ.
+// score 315 (was 332): Frame 0xe8 versus retail 0xe4, acquisition, flags and scalar homes remain; geometry now uses shared differences.
+// Earlier: Frame 0xe8 versus retail 0xe4; maximum/node acquisition, scalar homes, flags and vector scheduling differ.
 // Earlier: the 0xe4 frame and state register now agree; initial load order, clearing, flag width and vector scheduling differ.
 // Tried: pathfinding field at each use 459; bounded short initialization count 406; both 451; edge memset 408;
 // all three 434; field reads plus memset 436; all three plus point-difference helpers 443; traversal state first 396;
@@ -410,6 +411,12 @@ bool function_270750(byte *buffer, long unknown, s_actor_point_target const *tar
 // DH round 239: Native node/output link-record assignment, split increment, bounded
 // word link count and full-width previous-index combinations 360/360/373/373/385/385/393/393.
 // Original node declaration and complete body restored; frame acquisition and geometry homes remain.
+// DH round 252: Real remaining-step short/long counts with advancing edge receiver, separate CRT edge fill,
+// and their early traversal-constant forms
+// 372/401/353/353/332/353/391/390. Keep trial 05, plain 332.
+// DH round 254: entry edge/offset, delta and converted-point workspace subsets 315/332/315/332/315/332/315;
+// all with a long step count 378. Shared differences at original scopes 315 plain, 1388/1388 bytes, kept;
+// all entry-scope changes restored. Initial frame and indexed link transport still differ.
 // @retail 0x270d90
 PRIVATE short function_270d90(long actor_index, s_type_f17a25 *state,
 	s_path_result_view const *result, short node_index, short maximum_steps,
@@ -419,23 +426,24 @@ PRIVATE short function_270d90(long actor_index, s_type_f17a25 *state,
 	s_path_lookup_view *lookup = (s_path_lookup_view *)state;
 	s_path_input_view const *input = (s_path_input_view *)&state->source;
 	long edge_indices[40];
-	long initialize_count = lookup->nodes[node_index].depth + 1;
-	if (initialize_count > maximum_steps)
-		initialize_count = maximum_steps;
-	s_path_step_view *initialize_step = steps;
-	for (short i = 0; i < initialize_count; i++)
-	{
-		edge_indices[i] = NONE;
-		initialize_step->type = NONE;
-		initialize_step->link_index = NONE;
-		initialize_step->unknown02 = 0;
-		initialize_step++;
-	}
 	short previous_index = NONE;
 	s_path_node_key_view *previous = NULL;
 	short count = 0;
 	long link_count = 0;
 	bool complete = true;
+	long initialize_count = lookup->nodes[node_index].depth + 1;
+	if (initialize_count > maximum_steps)
+		initialize_count = maximum_steps;
+	s_path_step_view *initialize_step = steps;
+	long *initialize_edge = edge_indices;
+	for (short remaining = initialize_count; remaining > 0; --remaining)
+	{
+		*initialize_edge++ = NONE;
+		initialize_step->type = NONE;
+		initialize_step->link_index = NONE;
+		initialize_step->unknown02 = 0;
+		initialize_step++;
+	}
 	while (node_index != NONE)
 	{
 		s_path_node_key_view *node = &lookup->nodes[node_index];
@@ -499,9 +507,10 @@ PRIVATE short function_270d90(long actor_index, s_type_f17a25 *state,
 			{
 				point3f const *a = &((s_path_links_data_view const *)state->pathfinding)->vertices[edge->vertices[0]];
 				point3f const *b = &((s_path_links_data_view const *)state->pathfinding)->vertices[edge->vertices[1]];
-				vector3f edge_vector = { b->x - a->x, b->y - a->y, b->z - a->z };
-				vector3f offset = { previous_point->point.x - a->x,
-					previous_point->point.y - a->y, previous_point->point.z - a->z };
+				vector3f edge_vector;
+				vector3d_from_points3d(a, b, &edge_vector);
+				vector3f offset;
+				vector3d_from_points3d(a, &previous_point->point, &offset);
 				real length = function_30bf0(&edge_vector);
 				if (length > margin * 2.0f)
 				{
@@ -770,7 +779,18 @@ bool function_2715a0(byte *buffer)
 	return result;
 }
 
-// score 501 (was 533): two mask tests read as field bits (TEST_FIELD_BIT) give retail's load-and-shift; the rest still differs.
+// score 501 (was 501): State/node/link registers, scalar homes and heap-helper expansion differ.
+// Earlier field-bit mask forms 501 (from 533).
+// State EBX/EBP, node/link cursors and scalar homes remain. Force-inline insertion 577 (loses matched caller);
+// scalar role names 501; early inherited result 503; squared-length helpers 500; point setter 501; plain
+// result 517; shared inherited result 538; plain shared result 501; direct views 510; early projection margin
+// 502; ordinary inline insertion 497 (four-count gain below threshold). All restored; one-count helper gain
+// rejected.
+// Frame 0xc54 agrees; state EBX/EBP, scalar homes, link ownership and selective heap expansion remain.
+// Earlier: two mask tests read as field bits (TEST_FIELD_BIT) give retail's load-and-shift; the rest still differs.
+// DH round 254: actual link cursors with count/ordinal widths and readonly ownership
+// 518/544/497/497/518/544/497/497. Wide cursor with direct high/low/both masks 529/525/527;
+// both masks with wide count 527. All restored; 497 gains only four, and native mask forms shorten away from retail.
 // @retail 0x271630
 PRIVATE bool function_271630(s_type_f17a25 *state)
 {
@@ -1064,7 +1084,17 @@ struct s_flag_word_bits
    vertex indices are unsigned words: its comparisons with long NONE do not
    reject 0xffff. Only destination sector words have an effective NONE test.
    Link type stores write the low short; the upper short stays untouched. */
-// score 452 (was 475): flag 1 of the surface read through a word bitfield view gives retail's load-and-shift; the rest still differs.
+// score 452 (was 452): Frame 0x2c/0x34, data/count registers and vector endpoint homes differ.
+// Earlier surface word-bit view 452 (from 475).
+// Frame 0x2c/0x34, data/count registers and endpoint homes remain. Signed edge byte 464; direct parameter 452;
+// native surface bits 452; long surface cursor 483; output cursor 541; indexed vector helper 452; native
+// flags/direct parameter 464; paired cursors 555; ring-anchor reads at use 469; cached node array 474; reused
+// start vertices 485. All restored.
+// Frame 0x2c versus retail 0x34, root/count registers and endpoint spill ownership remain.
+// Earlier: flag 1 of the surface read through a word bitfield view gives retail's load-and-shift; the rest still differs.
+// DH round 254: both endpoints before copies in edge-surface/paired-surface/ring subsets
+// 449/452/449/450/447/450/447; all with consistent endpoint storage names 447. All restored: gains
+// are at most five, and the one-use end pointers require an exact match. Original guards and helpers retained.
 // @retail 0x272020
 PRIVATE short function_272020(s_pathfinding_data const *pathfinding,
 	s_path_node_key_view const *node, s_path_link_view *links, s_type_f17a25 const *state)

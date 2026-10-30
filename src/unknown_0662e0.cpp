@@ -600,6 +600,9 @@ __forceinline void network_configuration_levels_initialize(s_network_configurati
 // either folds the index into the pointer or normalises the pointer back into an index.
 // This round: loop bounds as `i < 17` - the levels helper 424, the first table 363, both 478,
 // helper and table together 454; every spelling regresses, the original bounds stay.
+// Round 205: high first-table interval first / diagonal-first matrix / both 486/628/643;
+// independent unsigned matrix ordinals alone/with high/with diagonal/with both 475/488/657/664;
+// equal-flag partition 694. Original decision graph, tables and counters restored.
 // @retail 0x66330
 void network_configuration_set_defaults()
 {

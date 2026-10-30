@@ -345,7 +345,7 @@ struct s_word_bit_iterator
 
 bool function_44690(s_word_bit_iterator *iterator, long *out);
 
-// score 125 (was 125): Frame 0xf0 agrees; padded-count/byte-count lifetime, scalar homes and memcmp carriers remain.
+// score 111 (was 125): Frame 0xf0 agrees; padded-count/byte-count lifetime, scalar homes and memcmp carriers remain.
 // Earlier 125 (was 142): retail keeps count + 31 in EBX (word count shifted from it after the copies),
 // frame 0xf0 agrees; padded-count retention and iterator/portal homes differ.
 // Earlier at 125 (was 142): retail keeps count + 31 in EBX (word count shifted from it after the copies),
@@ -366,6 +366,10 @@ bool function_44690(s_word_bit_iterator *iterator, long *out);
 // ordinary inline resolver 125; symmetric memcmp buffer order 125; copy-versus-exit
 // arms 125, with symmetric compare 125; native aggregate iterator on ordinary-inline
 // resolver/byte-derived word-count graph 125. Original body/declarations restored.
+// Round 413: Boolean convergence-result do-loop 111 (811 bytes); int/long/dword result
+// 128 each (815 bytes). Native iterator aggregate gives the same 111/128/128/128;
+// condition named changed 111. Keep original iterator initialization and the natural Boolean
+// copy/repeat condition; padded-count retention and scalar homes still differ.
 // @retail 0x16de20
 void function_16de20(short index, s_16e150_bits const *table, dword *output)
 {
@@ -380,7 +384,8 @@ void function_16de20(short index, s_16e150_bits const *table, dword *output)
 		memcpy(expanded, output, bytes);
 		memset(visited, 0, ((table->portal_count + 31) >> 5) * sizeof(dword));
 		long word_count = bytes / sizeof(dword);
-		for (;;)
+		bool changed;
+		do
 		{
 			s_word_bit_iterator iterator;
 			iterator.count = (short)word_count;
@@ -414,10 +419,10 @@ void function_16de20(short index, s_16e150_bits const *table, dword *output)
 					}
 				}
 			}
-			if (!memcmp(expanded, output, bytes))
-				break;
-			memcpy(output, expanded, bytes);
-		}
+			changed = memcmp(expanded, output, bytes) != 0;
+			if (changed)
+				memcpy(output, expanded, bytes);
+		} while (changed);
 	}
 	else
 		memcpy(output, base, bytes);
@@ -1474,7 +1479,7 @@ struct s_camera_clip_reference_16ebf0
 	byte field_14[4];
 };
 
-// score 140 (was 209): frame 0x98 agrees. Left: retail passes the narrow flag to 0x171d00 in DL (its
+// score 140 (was 140): frame 0x98 agrees. Left: retail passes the narrow flag to 0x171d00 in DL (its
 // fraction pointer in EAX, the slot shared with the early state spill at 0x34), BLOCKED-BY 0x171d00
 // (src/unknown_170d70.cpp is held: it takes the flag on the stack and the end point in EDX here, ESI in
 // retail); retail struct-copies the state's forward/up/position through pointers it keeps (forward in
@@ -1589,6 +1594,7 @@ struct s_camera_clip_reference_16ebf0
 // native forward/up inputs 210/210/214/213. Original narrow truth, copies and body restored.
 // Round 261: separate out-of-line validation/mode/location declaration subsets, all seven
 // 209; separate composition declaration 209. Original declarations and complete body restored.
+// Round 409: Staged cross with direct or retained matrix inputs, each with/without the inner position alias, 144/144/144/144; genuine reused state-field receivers on those four graphs 209/209/209/209. State/forward/point homes and held clipping convention remain. Original cross, copies, aliases and complete body restored.
 // @retail 0x16ebf0
 void function_16ebf0(long user_index)
 {

@@ -336,11 +336,21 @@ void c_widget::v21()
 #include "slot_handler.h"
 static __forceinline long real_to_long(real value);
 
-// score 89 (was 89): both draw blocks add the left edge to the width in a fresh register before
+// score 89 (was 89): the second block keeps the base edges in named locals, so the right edge's
+// base is one add into the width's register and the two offsets convert in retail's order.
+// The first block still adds the width to the left edge before the offset, which needs a copy of
+// the left edge, and both blocks still pick different registers for the same values.
+// y before x in the second block only 89 (homes right); in both blocks 93; width + left operand
+// order 89; height before width 91; right edge re-derived from the placement after the left offset
+// 108; the base edges kept in named locals in both blocks 92; the conversions moved before the
+// right edge's base 91; the two blocks' offsets swapped 89.
 // x + left (retail adds it into the width's register afterwards), and the two coordinate homes are
 // swapped (retail converts y first). y before x in the second block only 89 (homes right);
 // in both blocks 93; width + left operand order 89; height before width 91; right edge re-derived
 // from the placement after the left offset 108.
+// Round 189: placement index at use 89; tag at use 155; both metadata observations 163; byte alpha 98; short
+// alpha 98; dword alpha 89; read-only metadata 89; both observations with byte alpha 165.
+// Original body retained; coordinate homes and late width-register death remain, with frame 0x44 and retail length preserved.
 // @retail 0x24bda2
 void c_widget::v12(long a)
 {

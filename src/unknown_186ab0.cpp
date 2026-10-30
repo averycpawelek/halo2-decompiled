@@ -203,6 +203,11 @@ void player_action_initialize(s_player_action *arg_0);
 // Round 194: shared initial/count/both object producers 388/212/406; cyclic producer 385;
 // initial/cyclic, count/cyclic and all object producers 416/395/426; all with late header
 // accessor 438. Original observations and numerical/output expressions restored.
+// Round 413: state object/input/view identity observed once 283/431/372; both associations 385;
+// object with input/view/both 419/451/423; all with field-first selection comparison 423.
+// Input/view captures disturb the 0x54 frame; original observations and comparison restored.
+// Round 288: coherent count-pointer/native-array and mutable/readonly unit observations across
+// both count consumers, each with original/field-first selection comparison 389, 389, 389, 389, 384, 384, 384, 384. Restored.
 // @retail 0x186ab0
 void __stdcall function_186ab0(long arg_0, real arg_1, real arg_2, s_player_action *arg_3)
 {

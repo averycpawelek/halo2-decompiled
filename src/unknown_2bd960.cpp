@@ -1106,15 +1106,18 @@ void c_game_engine_a::v32(long team)
 	}
 }
 
+/* a point in the list below, with the values it is shown with */
+struct s_point_list_item_2bf
+{
+	point3f position;
+	real values[5];
+};
+
 /* a list of points to show (0x1004 bytes) */
 struct s_point_list_2bf
 {
 	long count;
-	struct
-	{
-		point3f position;
-		real values[5];
-	} items[0x80];
+	s_point_list_item_2bf items[0x80];
 };
 
 /* the values the points get (unknown_157450.cpp) */
@@ -1125,38 +1128,19 @@ static __forceinline void point_list_add_2bf(s_point_list_2bf *list, point3f pos
 {
 	if (list->count < 0x80)
 	{
-		long index = list->count++;
+		s_point_list_item_2bf *item = &list->items[list->count++];
 
-		list->items[index].position = position;
-		list->items[index].values[0] = a;
-		list->items[index].values[1] = b;
-		list->items[index].values[2] = c;
-		list->items[index].values[3] = d;
-		list->items[index].values[4] = e;
+		item->position = position;
+		item->values[0] = a;
+		item->values[1] = b;
+		item->values[2] = c;
+		item->values[3] = d;
+		item->values[4] = e;
 	}
 }
 
-/* adds the territories the player's team holds to the list */
-PRIVATE __forceinline bool territory_holder_matches_player(long holder, long player_index)
-{
-    if (holder == player_index)
-        return true;
-    if (holder == NONE || !datum_get_inlined(g_4e8c24, holder))
-        return false;
-    return player_get_2be(holder)->team == player_get_2be(player_index)->team;
-}
-
-// score 79 (was 88): frame 0xc and marker SI agree; holder/player/pool homes, predicate and append schedule differ;
-// inline depths one/two, state per use, early team-array lifetime, invalid
-// marker continue, point memcpy and nested holder test 88; marker-first 90.
-// holder and marker registers plus append carriers remain; append output last 88; point last 88; full-list guard 88; short ordinal 153; word ordinal 151; player team first 88; team failure exit 92; short ordinal with output last 153.
-// the team test branches directly with the holder predicate as one condition,
-// but the players base hoists 92; read through the pool in the test 96; helper as one expression 96;
-// position passed directly 92; position copied as a struct through its pointer 88 (same code, kept).
-// Existing player getters with mixed pool observation 79 (rejected); explicit player-array input 88;
-// external pool reference 88; reference plus array 88; opposite predicate / one result 88/88;
-// opposite with mixed getters 79 (rejected); opposite with array 88. Consistent per-use pool
-// and existing getters 79 (kept); opposite predicate with consistent per-use pool 79.
+/* adds the markers of the territories that the player or the player's team
+   holds to the list */
 // @retail 0x2bf740
 void c_game_engine_45c948::v32(long player_index, long list_pointer)
 {
@@ -1165,14 +1149,13 @@ void c_game_engine_45c948::v32(long player_index, long list_pointer)
 
 	for (long i = 0; i < (short)g_51eccc->w114; i++)
 	{
-		long holder = state->l70[i];
-		short marker = (short)state->w60[i];
-
-		if (marker != NONE)
+		if ((short)state->w60[i] != NONE)
 		{
-			if (territory_holder_matches_player(holder, player_index))
+			if (state->l70[i] == player_index ||
+				(state->l70[i] != NONE && datum_get_inlined(g_4e8c24, state->l70[i]) &&
+				 player_get_2be(state->l70[i])->team == player_get_2be(player_index)->team))
 			{
-				point3f const *source = &g_4e0350->marker_entries[marker].position;
+				point3f const *source = &g_4e0350->marker_entries[(short)state->w60[i]].position;
 				point_list_add_2bf(list, *source,
 					*(real *)&g_502258[35], *(real *)&g_502258[36], *(real *)&g_502258[0], *(real *)&g_502258[1], *(real *)&g_502258[37]);
 			}

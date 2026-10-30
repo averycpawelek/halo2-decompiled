@@ -806,56 +806,64 @@ static inline long view_buffer_write(s_ring_buffer *buffer, long count, const vo
 }
 bool function_1995a0(const byte *source, dword source_size, byte *destination, long *compressed_size, dword capacity, long level);
 
-// score 90 (was 90): ours is seven bytes longer: the running total is zeroed
-// in a stack slot here and in a register in retail, and the two stack slots
-// that hold the count and the flag are at other offsets.
-// Round 109: direct view plus writer forceinline 93; unsigned writer result 93;
-// writer reference 93; native count 93; unsigned offset 93; word kind 93;
-// named packet record 93; moving payload pointer 144.
-// score 90 (was 90): with the chunk test through a bool (unrotated loop, base rebuilt each pass), the
-// count in a `remaining` local (compressed size scoped to the compressor call, copied when it
-// succeeds), no gotos and the last write tested for success first, only four single instructions
-// differ (20, aligned 4): flag 130; plus remaining 58; scoped 51; copy on success 38; failures
-// returned 63; single-exit breaks 38; success first 20; then element address 20; offset first 20;
-// header = { 1 } 22; flag before the header 125; count before cursors 24; all of it without the flag 128.
+// score 49 (was 90): the length and the frame match retail's. Left: the prologue (retail pushes
+// ebp before ebx and copies the count into the compressed size's slot), the loop head (retail sets
+// the header's zero and kind 1 at the head, before the count test, and rebuilds the ring base each
+// pass; ours peels the test) and the count and data-address registers in the loop body.
+// Retail's unrotated head only appears with a flag tested at the head (a bool set by the count
+// test, or `while (!done)` with `done` set by the terminal record), which the compiler keeps;
+// with the compressed size scoped to the compressor call, a `remaining` copy made on success and
+// single-exit breaks that form gives 20 (aligned 10); with the offset zeroed beside the count
+// copy and the offset advanced before the count it gives 14 (aligned 4), but every flag-free
+// spelling rotates the loop (128), so it is not kept. Its two single differences: retail sets
+// kind 1 between the two zero stores and forms `destination + offset` with `add eax, ebp` (ours
+// `lea ecx, [eax + ebp]`).
+// Tried: flag 130; plus remaining 58; scoped 51; copy on success 38; failures returned 63;
+// single-exit breaks 38; success first 20; then element address 20; offset first 20;
+// header = { 1 } 22; flag before the header 125; count before cursors 24; all of it without the
+// flag 128; direct view plus writer forceinline 93; unsigned writer result 93; writer reference 93;
+// native count 93; unsigned offset 93; word kind 93; named packet record 93; moving payload
+// pointer 144; terminal-record do loops 89; positive-chunk finalization 85. On the 20 form: the
+// view read through its address or directly 20/20; offset declared at the top 42; `&destination[offset]`,
+// a const void cast or `offset + destination` 20 each; remaining declared first 20; a named
+// condition or a plain test 128; offset stored before the size 66; ring base first 34;
+// `while (result && !done)` 136; `while (!done)` 20; a named chunk size 111; view count first 24;
+// offset zeroed with the count copy 18; then offset advanced first 14. On the 14 form: header
+// `= { 0 }` 21; `memset(&header, 0, 8)` 14; helper source before count 14; byte data cast 14;
+// destination read once through its address 14; a void destination 14; dword offset 14; offset
+// declared first 14; word size 15; the terminal record at the loop head with a break 128; a
+// break to a terminal record after the loop 159.
 // @retail 0x86800
 bool function_86800(dword capacity, c_simulation_view *view, dword source_size, byte *destination)
 {
- c_simulation_view *const *view_argument = &view;
  bool result;
  long compressed_size;
  result = function_1995a0(game_state_globals.base_address, source_size, destination, &compressed_size, capacity, 9);
  if (result)
  {
+  struct { short kind; short size; long offset; } header;
   long offset = 0;
   for (;;)
   {
-   struct { short kind; short size; long offset; } header;
+   if (compressed_size <= 0) break;
    memset(&header, 0, sizeof(header));
    header.kind = 1;
-   if (compressed_size > 0)
-   {
-    header.size = (short)(compressed_size > 1024 ? 1024 : compressed_size);
-    s_ring_buffer *buffer = (s_ring_buffer *)&(*view_argument)->unknown9c;
-    header.offset = offset;
-    if (view_buffer_write(buffer, sizeof(header), &header) == NONE ||
-     view_buffer_write(buffer, header.size, destination + offset) == NONE)
-     { result = false; goto local_0; }
-    compressed_size -= header.size;
-    offset += header.size;
-    (*view_argument)->unknownac++;
-   }
-   else
-   {
-    header.size = 0;
-    s_ring_buffer *buffer = (s_ring_buffer *)&(*view_argument)->unknown9c;
-    header.offset = offset;
-    if (view_buffer_write(buffer, sizeof(header), &header) == NONE)
-     { result = false; goto local_0; }
-    (*view_argument)->unknownac++;
-    break;
-   }
+   header.size = (short)(compressed_size > 1024 ? 1024 : compressed_size);
+   s_ring_buffer *buffer = (s_ring_buffer *)&view->unknown9c;
+   header.offset = offset;
+   if (view_buffer_write(buffer, sizeof(header), &header) == NONE ||
+    view_buffer_write(buffer, header.size, destination + offset) == NONE)
+    { result = false; goto local_0; }
+   compressed_size -= header.size;
+   offset += header.size;
+   view->unknownac++;
   }
+  header.size = 0;
+  s_ring_buffer *buffer = (s_ring_buffer *)&view->unknown9c;
+  header.offset = offset;
+  if (view_buffer_write(buffer, sizeof(header), &header) == NONE)
+   { result = false; goto local_0; }
+  view->unknownac++;
  }
 local_0:
  return result;
@@ -959,12 +967,16 @@ bool function_869a0(c_simulation_view *view, void *block)
 
 bool function_68670(byte *source, long size, void *block);
 
-// score 97 (was 97): the two fields of the record are read into the registers in the opposite
+// score 97 (was 97): the window fields now load in retail's order, but retail subtracts the span
+// from 0x200 into eax where we subtract 0x200 from the span, and our ring buffer update reuses
+// the start read before the read call instead of reloading it as retail does.
 // order (+0x1c before +0x18), so the rest of the block follows differently.
-// score 97 (was 97): a `used = next - end` local gives retail's window test exactly (135 from the
+// Earlier: a `used = next - end` local gives retail's window test exactly (135 from the
 // listing shift); retail also reloads the buffer start after each read call and loads the header
 // size after the start store, as if the call might touch the buffer. Window as shift 97; window
 // pointer 97; inline read method 135; header size per use 135; buffer hoisted out of the loop 204.
+// Round 182: Self-aligned standard entry, case-workspace scopes and complete ring-field forms do not recover receiver and reader visibility
+// Trials 1-8: 179, 172, 179, 172, 164, 159, 164, 159.
 // @retail 0x865d0
 void __stdcall function_865d0(c_simulation_view *view)
 {

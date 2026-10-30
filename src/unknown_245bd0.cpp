@@ -231,7 +231,36 @@ PRIVATE inline void shape_copy_header(s_shape_header const *source, s_shape_head
 	out->unknown0d = source->unknown0d;
 	out->unknown0e = source->unknown0e;
 }
-// score 57 (was 61): the sphere test's normal: retail multiplies the x and z
+// score 57 (was 57): the sphere test's normal: retail multiplies the x and z
+
+// score 57 (was 57): the sphere test's normal: retail multiplies the x and z differences in
+// place (normal x/y/z in xmm1/xmm3/xmm2, differences x/z/y in xmm1/xmm2/xmm4) and loads 1.0 in
+// each arm; ours multiplies copies of the scale, keeps z/y in xmm4/xmm3 and hoists 1.0 into xmm0
+// before the fsqrt. The products go in place only when the sum's first reads of x and z are
+// pointer reads and y's is not: a pointer local to the difference read for x and z in a
+// statement sum x, z, y, the dot's inputs swapped and the unit-z zeros stored separately matches
+// (not keepable). Tried: unit-z zeros chained y-first 57 (y or z first 57, x first 61), stored
+// separately 61; unit-z arm first 62; depth before plane->d 61-65; distance-squared orders i,k,j
+// 61, k,i,j 59, regrouped 57-61, direct statement sums in each order 61; squared-length/self-dot
+// helpers 152 (also with both fixes); the scale helper's statement orders 61-158, operand orders
+// 57; scale declared first 61; reciprocal in the call 57; double reciprocal 397; the difference
+// by fields 61, in the plane normal 177-181; in-place scale + copy 397; separate/default normal
+// workspace 397; radius-square local 61; component-square lifetimes 61; immutable distance,
+// sphere and point references 61; shared scaled difference 57; squared-distance accumulator and
+// paired difference 61/61; normal memset and accumulator/reset 176/180; component scale loops
+// 57/57, with a normal reset 175; outside-sphere exit 57; root declared first 57; default output
+// before normalization 174; center/sphere value copies 397/396; center plus squared helper 397;
+// late radius after normal/before root/after root, shared double-factor scale, in-place input,
+// late radius with scale, native factor, partial squared distance 62/65/65/397/397/397/397/61;
+// containment-test return, plane/depth pointer returns, normal-first projection, projection
+// value, existing reverse dot in either order, test/projection result 57; dot swap 57. Round 11:
+// length_sq3f with the existing vector3f_scale(&d, 1 / distance) and separate zeros 152;
+// dot3f(&d, &d) 152; a radius local 176 (668 bytes); the sphere helper's 24 parameter orders and
+// __forceinline give identical code (compile-only); a nested unit-vector helper taking the
+// distance (reciprocal inside it) with length_sq3f gets the in-place products (compile-only xmm
+// diff 13) but swaps x/y and folds the last dot term, 129 (and a one-caller helper).
+// the sphere test's normal: retail multiplies the x and z
+// the sphere test's normal: retail multiplies the x and z
 // differences in place (normal x/y/z in xmm1/xmm3/xmm2) and loads 1.0 in each arm;
 // ours multiplies copies of the scale and hoists 1.0 into xmm0 before the fsqrt.
 // The unit-z arm's zero stores chained (y first, then x) 57 (each order with y or z
@@ -251,9 +280,7 @@ PRIVATE inline void shape_copy_header(s_shape_header const *source, s_shape_head
 // sphere displacement XMM homes and the early reciprocal-one load remain.
 // Shared squared length/self product 152/152; outside-sphere exit 57; root declared first 57;
 // default output before normalization 174; center/sphere value copies 397/396; center plus squared helper 397.
-
 // displacement/normal XMM homes and early reciprocal-one load remain;
-// late radius after normal/before root/after root, shared double-factor scale, in-place input,
 // late radius with scale, native factor and partial squared distance 62, 65, 65, 397, 397, 397, 397, 61.
 // sphere displacement/normal coalescing and reciprocal-one hoisting remain.
 // Containment-test return, successful plane/depth pointer returns, normal-first projection,
@@ -269,6 +296,8 @@ PRIVATE inline void shape_copy_header(s_shape_header const *source, s_shape_head
 // 456/678 (sphere helper outlined). Existing helper forced inline on the same eight graphs:
 // 235/235/244/244/257/257/262/262. Original helper/query restored; displacement/normal homes
 // and reciprocal-one hoisting remain.
+// Scale helper with the factor as its first parameter 57; unit-z through vector3f_assign 61;
+// arms swapped 170; depth stored before the normalization branch 173; sqrtf 57.
 // @retail 0x245ef0
 bool function_245ef0(s_shapes const *shapes, point3f const *point, s_shape_result *result)
 {
@@ -317,9 +346,18 @@ PRIVATE inline real shape_dot_reverse(vector3f const *a, vector3f const *b)
 }
 
 // score 40 (was 40): the float is loaded into XMM1 and moved to XMM0; retail loads it into XMM0 and
-// moves XMM5 into XMM1.
+// moves XMM5 into XMM1 (retail: radius, zero and a in XMM0, c in XMM1, b in XMM2; ours c XMM0,
+// radius and b XMM1, zero and a XMM2; instructions otherwise identical).
 // Existing offset/scale/plane-product force-inline declarations, all seven combinations 40;
 // native result byte 69.
+// Round 95: b accumulated in i,k,j statements 42 (retail's sum order, but the j product loads
+// direction->j first: 434 bytes); radius square subtracted inline after the sum 51; named after the
+// sum 40; `c <= 0.f` 40; a radius local squared after the sum 49. c stays in XMM0, the zero in XMM2.
+// native result byte 69. c as one expression 53; radius square in the subtraction 51;
+// length_sq3f/dot3f for c 55/57; radius square after the sum, c <= 0, length_sq3f for a, radius
+// local, named distance square, radius square first, result before *t: 40 (same code);
+// dot3f for b 42; reverse dot for b/a 42/42; result declared late 67 (caller 0x2469b0 170);
+// arms swapped 63.
 // @retail 0x2461a0
 bool function_2461a0(
 	s_sphere const *sphere,
@@ -379,6 +417,12 @@ bool function_2461a0(
 	return result;
 }
 
+// score 104 (was 106): every sum now associates as in retail (the compiler reorders unparenthesized
+// sums of three products); what still differs is scheduling of the first block: retail multiplies
+// v.k by u.k from memory before summing a, and keeps a in XMM3 and uv in XMM0 (ours XMM4, XMM1), which
+// swaps registers to the end. Tried: any subset of the four parenthesized sums (151-214), w computed
+// k, j, i by hand (211), a or uu parenthesized (180, 206), uv unparenthesized in any order (214),
+// uv as += statements (182), a/uv/uu statement orders (104-217), den = a * uu (104).
 // @retail 0x246360
 bool function_246360(
 	vector3f const *direction,
@@ -399,10 +443,10 @@ bool function_246360(
 	}
 	vector3f w;
 	vector3d_from_points3d(&capsule->origin, start, &w);
-	real uw = dot3f(u, &w);
-	real vw = v->k * w.k + v->j * w.j + v->i * w.i;
+	real uw = (u->j * w.j + u->i * w.i) + u->k * w.k;
+	real vw = (v->k * w.k + v->j * w.j) + v->i * w.i;
 	real b = vw * uv - uw * a;
-	real c = (w.k * w.k + w.j * w.j + w.i * w.i - capsule->radius * capsule->radius) * a - vw * vw;
+	real c = ((w.k * w.k + w.j * w.j) + w.i * w.i - capsule->radius * capsule->radius) * a - vw * vw;
 	real disc = b * b - c * den;
 	if (0.f > disc)
 	{
@@ -468,7 +512,7 @@ bool function_246360(
 	q.i = u->i * t_enter + w.i;
 	q.j = u->j * t_enter + w.j;
 	q.k = u->k * t_enter + w.k;
-	real along = (v->k * q.k + v->j * q.j + q.i * v->i) / a;
+	real along = ((v->k * q.k + v->j * q.j) + q.i * v->i) / a;
 	real back = 0.f - along;
 	plane->i = v->i * back + q.i;
 	plane->j = v->j * back + q.j;
@@ -496,7 +540,11 @@ bool function_246360(
 // Round 184: Complete named/start-direction product phases, six-product ownership, interleaved
 // components, array products and interleaved products 157/113/157/157/112/113/189/157; existing
 // add-scaled direction/start/both 84/84/83; existing projection inline/forced 53/53. All
-// restored.
+// restored. Retail: start-point products all load the plane field first, direction products
+// fold only the first (the edge loop folds d2.x into edge.y's copy); direction point computed
+// first 83; edge before offset 53; numerator before denominator 125; current vertex indexed
+// from i - 1 instead of the walking pointer 205 (caller 0x2469b0 139); start point projected
+// before the direction point is built 138 (0x2469b0 2).
 // @retail 0x2466b0
 bool function_2466b0(
 	point3f const *start,

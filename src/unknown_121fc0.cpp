@@ -55,7 +55,11 @@ static inline char *function_xe9ecc4(char *string, char const *delimiters, char 
 // the token loop, so every stack offset in the block differs by four. The size
 // clamp also differs: retail stores the clamped size and reloads it. Tried:
 // local_12 declared before the if and the token array after the counters, 126
-// (not kept: gain under 8).
+// (not kept: gain under 8). Round 38: the loop outside success 127; early token 147 (EBP moves out,
+// with extra address setup); token as read destination 144; separate read size with it 164; early cursor
+// 127; early token with read size 155; loop with read size 216; role-named size 147; early token and
+// cursor 172; nested early token 128; reversed read outputs 128; early token with reversed outputs 147.
+// Original body restored.
 // @retail 0x121fc0
 void function_121fc0(void)
 {

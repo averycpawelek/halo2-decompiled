@@ -198,6 +198,10 @@ PRIVATE __forceinline dword function_224551(s_draw_sprite_seed const *arg_0,
 // Round 274: Existing flip producer with a zero result and two native bit tests,
 // definition/seed reference inputs and forced expansion in eight combinations 466 each.
 // Original flip producer, input contracts, tint clamp and complete callback restored.
+// Round 284: Actual two-element UV output array with original packed tint, caller
+// tint pointer/reference and native color return 445/519/519/592; lexical array
+// homes 445/519/519/592. Exact-only grouping did not match; all native
+// separate outputs and complete helper restored, including every in-place input capture.
 // @retail 0x224550
 void __stdcall function_224550(s_draw_sprite_seed const *seed,s_draw_value_cache *values,
 	point3f *position,point3f *direction,real scale,color4f const *color,s_draw_sprite_context *context)

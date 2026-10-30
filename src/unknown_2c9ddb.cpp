@@ -95,6 +95,10 @@ extern long g_55c154;
 // Entry declarations with in-place assignments: source carrier 61; classification 61; both 61;
 // reversed pair 61; pair plus selected carrier 61; pair plus request workspace 61; pair plus
 // both buffers 61; pair with exchanged buffer declaration order 61.
+// Round 77: noinline declaration of the copy in its own file (retail's ecx/edi/esi call) 88
+// (one arm is short); two load arms 174, with that call 179 (EBX takes zero, saved and the
+// 0x54e4a0 constant, `this` spills to [ebp-4], unbiased frame); selected arm first 178;
+// saved declared at the top 179.
 // @retail 0x2ca284
 void c_class_2c9e69::handle_item(s_controller_reference **controller, long *item)
 {

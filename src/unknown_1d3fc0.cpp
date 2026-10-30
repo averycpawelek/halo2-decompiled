@@ -45,6 +45,8 @@ PRIVATE __forceinline void function_1d3fc1(vector3f *arg_0)
 // helper 149; array scale loop 149; each array form with indexed projection 149/149/149; indexed
 // projection alone 149. Header normalize3d (not inlined under /Ob1: four calls) 453; six transforms
 // at function scope instead of the array (same frame and slots, identical code) 149.
+// Round 36: separate remaining-axis k-square helper 152; remaining terms reversed 152; k/j square pair 152;
+// pair declarations swapped 152; k-first sum 152; paired k/j-first sum 152; grouped j/i 149; named j/i subtotal 149.
 // @retail 0x1d3fc0
 void __stdcall function_1d3fc0(long arg_0, s_havok_component *arg_1)
 {

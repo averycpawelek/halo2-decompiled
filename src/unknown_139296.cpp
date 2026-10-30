@@ -460,6 +460,9 @@ bool function_22acb4(long player_index);
 // Original late snapshot and every mask producer restored; second-mask spill remains.
 // Round 399: Source-flags phase scope, multiplayer phase scope, readonly source values and all
 // combinations, then all result-home names: 165 each. Original restored.
+// Round 38: Complete second-mask computation after first-mask updates 8/2/4/16/32/256/512/1024:
+// 272/168/288/165/278/278/280/280 fast, lengths 883/880/874/880/881/881/881/881. Extra
+// second-mask slot remains; original phase order, observation and complete body restored.
 // @retail 0x13a050
 void function_13a050(byte const *status, long user_index, long type, s_13ad48_item const **item_out,
 	word *first_out, word *second_out, word *third_out, word *fourth_out)

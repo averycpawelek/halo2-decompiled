@@ -1274,6 +1274,9 @@ bool network_message_read_header(s_bitstream *stream, long *type, c_type_659ceb 
 // Original walk locals and long result restored; oldest/false homes and allocator save remain.
 // Pre-lookup nullable scan/copy/both results with long 141/202/202; with bool 234/263/263;
 // both lookups with byte/short result 243/214. Original terminal-loop body restored.
+// Terminal-condition graph: actual decoder-result completion, long/bool/byte/short
+// 262/175/190/259; common success exit, long/bool/byte/short 184/235/233/220.
+// Original dword result, completion edges and every helper restored at 141.
 // @retail 0x95840
 bool __stdcall function_095840(s_network_stream_header *header, long *message_type, long *message_size, void *message_data)
 {

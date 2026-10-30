@@ -102,6 +102,9 @@ static __forceinline long function_75fc3(s_network_observer *arg_0, long arg_1)
 // Round 222: Persistent configuration/updated counter/both 428/415/432; callback-scale arms 415; configuration-arms/counter-arms/all 424/422/415; all with named window terms 415. All restored; frame 0x3c versus 0x34, channel/result homes and counter composition remain.
 // MiniMax D run 2026-10-29: the two flag stores in the other order and the reliable-pending call's
 // declaration split from its assignment 407 (gain 1, under the keep bar; not kept).
+// Round 270 M: sequential snapshot OR/add low word 408/418; scratch declared first
+// 408/418; packet output initialized first 424/420; both entry lifetimes 424/420.
+// Same counter bits throughout; original composition, lifetimes and complete body restored.
 // @retail 0x75fc0
 bool s_network_observer::connection_v05(long arg_1,
 	bool arg_2, bool arg_3, bool arg_4, bool *arg_5, bool *arg_6,

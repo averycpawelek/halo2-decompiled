@@ -52,7 +52,13 @@ PRIVATE inline long swizzle_log2(dword value)
 	return result;
 }
 
-// score 82 (was 82): retail's log2 loops are log2_floor's (test, cmp 1, then shr/inc
+// score 82 (was 82): the coordinates now take retail's registers (the second in
+// cx, the third in dx) with the column local declared first; retail still keeps
+// the row coordinate 16-bit in si, promotes the column one after the mask, uses
+// log2_floor's loop shape and picks the common count with a branch (ours cmov).
+// Tried: log2_floor 87 (the loops then match), the minimum as if/else 87 (msvc
+// if-converts it), short copies or no copies 119 (the long copies fix the argument
+// registers, and without them the matched caller 0x136140 no longer matches).
 // until 1; ours shifts first and tests for 0), the minimum is a branch (ours cmov),
 // and the parameters stay 16-bit until the mask is built: y is moved to si at entry
 // and both are sign-extended there (ours extends both at entry). Tried: swizzle_log2
@@ -62,9 +68,12 @@ PRIVATE inline long swizzle_log2(dword value)
 // 100, short copies 119, only y copied 93, the copies swapped 84 (these five change
 // how x and y travel and cost matched caller 0x136140); log2_floor called with the
 // body rewritten as above 119.
-// score 82 (was 82): log2_floor called (retail's loops) 87; with x copied first 84 (costs
+// Earlier: log2_floor called (retail's loops) 87; with x copied first 84 (costs
 // 0x136140); with the minimum as if/else 87; mask as long 90; short copies at entry and long
 // copies after the mask make x and y stack parameters.
+// Round 284: Native output storage throughout, with private/shared logarithms by
+// axis, 96/98/95/98; y shift at production with the same boundaries
+// 95/99/94/94. Original result locals and both helper calls restored.
 // @retail 0x358d0
 void function_358d0(short width, short x, short y, short height, dword *out)
 {

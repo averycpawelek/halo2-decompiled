@@ -1928,37 +1928,34 @@ long function_75890(long time);
 
 bool network_session_host_become_leader(c_class_58d20 *session);
 
-// score 90 (was 90): frame 0xc agrees; readiness uses BL and the failure/mode join differs.
-// cleanup-first mode 90; byte readiness 90; byte completion 94; single state read 90;
-// readiness before countdown 140; shared live-state predicate 90.
-// Owner/secondary/primary/paired object references 90; completion from test 129;
-// host return guard 90; paired preparation result 90; reversed timed-type tests 93.
-// Shared type/all failure commands 144/128; combined mode-readiness 90 (426 bytes);
-// preparation failure first 90; raw-time readiness 94; unsigned saturated time 90;
-// completion before mode call 90; shared failures with combined gate 129.
-// score 59 (was 90): readiness/session registers and failure/timer join still differ.
-// Integer readiness 59 kept; entry readiness 134; entry integer readiness 135;
-// timed type range 107; four/five/timed arm order 111; completion from readiness 136;
-// test-assigned preparation 90; active predicate value 166.
-// score 48 (was 59): readiness callee input and failure/timer join still differ.
-// Live timer/mode/both fields 59/59/59; integer pending 48 kept;
-// byte/word pending 90/59; common-tail guard 59; pending with live timer 48.
-// score 48 (was 48): readiness input and failure/timer join persist. Full
-// preparation pending 71; staged/second-call pending 95/96; tail guard 48;
-// wide completion 146; unsigned preparation 71; early/raw pending 128/61.
-// score 48 (was 48): readiness input and failure/timer join persist. Duration pending 91;
-// shared/early countdown seconds 97/107; clock value 90; timed/five arm order
-// with integer pending 117/118; word completion 146; early duration pending 137.
-// BLOCKED-BY 0x6e720 (retail passes the session to it in EBX, ours
-// in ESI, so EBX holds the pending flag here). Bool ready 90; ready with the failure
-// arm first 90; pending set in each arm 52; clamp as an if 129; the clamp as a
-// ternary gives the same bytes as the mask form it replaces.
-// readiness input and failure/timer join persist.
-// Native int pending, pending/completion/millisecond names and outer pending declaration 48;
-// positive-duration test, full-width pending with failure first and nested preparation 48.
-// score 48 (was 48): readiness input and failure/timer join remain different.
-// Unsigned pending/const captured pointers 48; quotient/remainder ceiling 93;
-// separate inline/noinline readiness/preparation declarations 48 each; pending conjunction 92.
+// score 48 (was 48): BLOCKED-BY 0x6e720 (retail passes the session to it in EBX, ours in ESI, so
+// EBX holds the pending flag here); retail sets its readiness per arm after the calls (AL: `xor eax,
+// eax` shared with the timer reset, `sete al`) and lays the failure arm first. Tried: cleanup-first
+// mode 90; byte readiness 90; byte completion 94; single state read 90; readiness before countdown
+// 140; shared live-state predicate 90; owner/secondary/primary/paired object references 90;
+// completion from test 129; host return guard 90; paired preparation result 90; reversed timed-type
+// tests 93; shared type/all failure commands 144/128; combined mode-readiness 90 (426 bytes);
+// preparation failure first 90; raw-time readiness 94; unsigned saturated time 90; completion before
+// mode call 90; shared failures with combined gate 129; integer readiness 59 (kept); entry readiness
+// 134; entry integer readiness 135; timed type range 107; four/five/timed arm order 111; completion
+// from readiness 136; test-assigned preparation 90; active predicate value 166; live timer/mode/both
+// fields 59/59/59; integer pending 48 (kept); byte/word pending 90/59; common-tail guard 59; pending
+// with live timer 48; full preparation pending 71; staged/second-call pending 95/96; tail guard 48;
+// wide completion 146; unsigned preparation 71; early/raw pending 128/61; duration pending 91;
+// shared/early countdown seconds 97/107; clock value 90; timed/five arm order with integer pending
+// 117/118; word completion 146; early duration pending 137; bool ready 90; ready with the failure
+// arm first 90; pending set in each arm 52; clamp as an if 129 (the ternary clamp kept: same bytes as
+// the mask form); native int pending, pending/completion/millisecond names and outer pending
+// declaration 48; positive-duration test, full-width pending with failure first and nested
+// preparation 48; unsigned pending/const captured pointers 48; quotient/remainder ceiling 93;
+// separate inline/noinline readiness/preparation declarations 48 each; pending conjunction 92; a
+// bool ready set in each arm, failure arm first/second 96/96; a long ready so 69; a bool ready
+// false at its declaration, set in the timer arm 90; the pending flag set in each arm with the
+// failure arm first 52.
+// Round 76: a bool ready assigned in each arm (`ready = remaining == 0;` / `ready = false;`) 96, aligned
+// 12 -> 11: retail's `sete al` and `test al, al`, only the 0x6e720 setup and the block order left; the
+// same with the failure arm first 96 (same code); the failure stores swapped 96; a long ready 69 (retail's
+// shared `xor eax, eax` for the timer and the flag, but `test eax, eax`); `ready = unknown18 = 0;` 96.
 // @retail 0x72700
 bool c_session_state_start_match::update()
 {

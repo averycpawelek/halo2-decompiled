@@ -46,6 +46,15 @@ struct s_slot_54
 	byte unknown10[0x40 - 0x10];
 };
 
+/* the same state past the slot header (s_slot_54's layout from +0xc) */
+struct s_slot_54_data
+{
+	bool unknown00;
+	byte unknown01;
+	short ticks;
+	byte unknown04[0x34 - 4];
+};
+
 struct s_ai_actor_view_3c
 {
 	byte unknown000[0x3c];
@@ -178,6 +187,14 @@ void function_265bb0(long actor_index);
 
 // score 60 (was 60): frame four versus retail zero (first tick in the frame, not the slot home);
 // slot, actor-table and object-table registers rotate and the mode is compared in memory.
+// Lane 11 r12: the second tick through local_1 (both ticks via the timer helpers) gives retail's
+// zero frame and 367-byte length, aligned 45 (was 77), but positional 94: restored on that count.
+// Retail loads the slot into ebx at entry, keeps the actor table in edx, the object table in
+// ebp and the unit index in edx for the else-arm call, and loads the mode into cx before testing
+// it; ours reads the slot per arm and compares the mode in memory. Lane 11 r12 (aligned counts):
+// unit index local 128 (382 bytes); for the mode and else-arm call only 44; state before the
+// actor/before the result/result last 45/45/48; a switch on the mode compiles as the if.
+// Earlier rounds, on the old form (frame four, the second tick written into the slot parameter):
 // Both timer helpers 85; add helper 68 plain kept; set helper 80; native tick outputs
 // both 72, first 70, second 80; shared random index 80; library slot copy 80.
 // Round 128: native slot data block/full native copy 91/91; data with second timer writer/native
@@ -207,6 +224,13 @@ void function_265bb0(long actor_index);
 // Round 212: long/dword returned-state storage at entry 69/69; branch-default 107/107;
 // the same with the zero-mode single exit 69/69/107/107. Four-byte conversion frame and
 // mode residency remain; original result storage, body and every call tuple restored.
+// Round 34: a `long ticks` local for the second conversion (no parameter reuse) gives retail's zero
+// frame and length 94 (aligned 29; two saved registers short); the file's timer setter for it 94;
+// plus a unit-index local 118, used for the 0x27 call only 85; plus the slot data block
+// `(s_1acda0 *)slot->unknownc` 94; data block + unit local for the 0x27 call only 80 (aligned 8: all
+// registers, both conversion homes and the slot load as retail; left the mode compared in memory where
+// retail loads it into cx and tests it, plus two load slots); the same with the unit local everywhere
+// 98; on it `!mode` 80, mode test without the local 80.
 // @retail 0x1ac100
 short __stdcall function_1ac100(long actor_index, s_slot *slot, s_slot *next)
 {
@@ -318,10 +342,24 @@ short __stdcall function_1ac3f0(long actor_index)
 	return result;
 }
 
-// score 29 (was 34): both draws now precede the state stores (retail stores the seed once, after the
-// second draw) and the first timer keeps the scale on the x87 stack as retail; left are the seed store
-// between the draws, the scale's folded 2/65535 product (retail scales by 1/65535, then doubles) and the
-// last two stores of the short-delay path in the other order.
+// score 29 (was 29): coordinator, round 34 review: the 4-point form below writes slot_random_range's
+// body out inline, which is kept only with a byte match; restored to the helper call (29). Lead: the
+// scale drawn as `1.0 + 2.0 * random` in double through the random-real helper
+// gives retail's single seed store, unfolded 1/65535 product (doubled with fadd st0,st0) and the scale
+// kept on the x87 stack to the first timer. Left: the `+ 1.0` adds a double constant one store later
+// (retail adds a float constant after the 0x25 store) and the short-delay path stores 0x39 before 0x24.
+// Round 34: scale through 0x259d0 47 (seed forwarded, unfolded, but the scale is substituted into the
+// timer: fimul); plus a compiled-out do/while after the draw/before the timer 47/47; plus a rate local in
+// the timer block/after the draws 43/37; plus an in-place converted duration 47; plus the cross-file
+// seconds-to-ticks inline 47 (29 with the old scale); delay through slot_random_range with the scale
+// through 0x259d0 80; the file's random_range for the scale 74; both through slot_random_range 35;
+// `1.0f + 2.0f * random` / `random * 2.0f + 1.0f` / `(real)(2.0f * random) + 1.0f` 51/51/53 (folded
+// 2/65535, otherwise exact); double forms `(real)(1.0f + 2.0 * r)`, `(real)(2.0 * r + 1.0f)`,
+// `1.0f + 2.0 * r`, `(real)(1.0 + r * 2.0)` 4 each; float add of a double product
+// `1.0f + (real)(2.0 * r)`, `(real)(2.0 * r) + 1.0f`, `1.0f + (real)(r * 2.0)` 9 each (float constant,
+// add scheduled after the rate load). On the kept form: branch arms swapped 23, flag field tested 49.
+// Earlier (29): both draws precede the state stores and the first timer keeps the scale on the x87
+// stack; left were the seed store between the draws, the folded 2/65535 product and the tail stores.
 // Earlier: frame four agrees; scale is popped at the first timer multiply and stores differ;
 // tried first timer shared conversion direct 114; first timer shared conversion named seconds 103;
 // second timer shared conversion 49; both timers shared conversion 121; integral tick rate 47;
@@ -693,28 +731,15 @@ bool __stdcall function_1ad590(long actor_index, s_slot *slot)
 	return true;
 }
 
-// score 58 (was 58): default reload and saved-register roles differ. Branch-assigned defaults,
-// valid object first: short result with entry/scoped state 76/76, long result 73/73; invalid
-// object first: short 80/80, long 77/77.
-// Object index once 58; element-first 58; property once 58; element-first 57; both
-// indices once 58; element-first 57; original reads element-first 58; tick receiver 55 (below gate).
-// Separate continuation, word/native with arms/conditional: branch 55/58/56/59; entry
-// 55/58/56/59 (three-point gain rejected). Tag/prop/state inline and noinline declarations,
-// singly and together, 58 each. Independent default reload and saved roles still differ.
-// No else (entry default kept) 55; invalid test first without else 55; slot cast at each use 58;
-// split 0xe tests 58; nested property/element tests 58; result first 58; state first 58;
-// inverted tick test 60.
-// Actor readonly/reference, element readonly/reference, readonly pair, native input
-// pair, state reference and all record references: 58 each; default reload and saved roles remain.
 // @retail 0x1ad5b0
 short __stdcall function_1ad5b0(long actor_index, s_slot *slot, bool active)
 {
 	s_actor_view *actor = actor_get(actor_index);
-	s_slot_54 *state = (s_slot_54 *)slot;
 	short result = g_46fbe4;
 
 	if (actor->unknown26c != NONE)
 	{
+		s_slot_54_data *state = (s_slot_54_data *)slot->unknownc;
 		s_tag_element_54 *element = (s_tag_element_54 *)function_1e5450(actor_index, ai_object_get(actor->unknown26c)->definition_index);
 		if (actor->prop_index != NONE && element)
 		{
@@ -723,15 +748,11 @@ short __stdcall function_1ad5b0(long actor_index, s_slot *slot, bool active)
 				state->ticks++;
 			else
 				state->ticks = 0;
-			if (state->unknown0c && function_1f86f0(actor_index) ||
+			if (state->unknown00 && function_1f86f0(actor_index) ||
 				(real)state->ticks * g_510c54->rate > element->unknown9c)
 			{
 				result = 0xe;
 			}
-		}
-		else
-		{
-			result = g_46fbe4;
 		}
 	}
 	return result;

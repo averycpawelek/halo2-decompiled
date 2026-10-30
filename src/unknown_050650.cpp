@@ -240,6 +240,8 @@ static inline real actor_looking_normalize2d(point2f *vector)
 // named dot 68, named factors 47, pointers to the locals 38; none better than the plain single exit.
 // Round 398: paired real squares, uniform scalar inputs, both, squares plus sum; each with original/conditional reference-projection lifetime
 // 8/38/122/128/122/128/8/38; all restored.
+// Round 113: unnamed helper square 6; helper with an else-zero single exit 2 (same code); sqrtf 2;
+// brace-initialised reference copy 23; `>=` epsilon test 34; permuter (48 variants) none below 2.
 // @retail 0x296d60
 PRIVATE bool function_296d60(real cosine, vector3f const *reference, vector3f const *aim, bool three_dimensional)
 {
@@ -512,14 +514,13 @@ static inline real actor_looking_normalize3d(vector3f *vector)
 
 static inline void actor_looking_rotate_in_place(vector3f *vector, vector3f const *axis, real sine, real cosine)
 {
-	real parallel = (axis->i * vector->i + axis->j * vector->j + axis->k * vector->k) * (1.f - cosine);
-	vector3f cross;
-	cross.i = vector->j * axis->k - vector->k * axis->j;
-	cross.j = vector->k * axis->i - vector->i * axis->k;
-	cross.k = vector->i * axis->j - vector->j * axis->i;
-	vector->i = vector->i * cosine + axis->i * parallel - cross.i * sine;
-	vector->j = vector->j * cosine + axis->j * parallel - cross.j * sine;
-	vector->k = vector->k * cosine + axis->k * parallel - cross.k * sine;
+	real projection = (vector->i * axis->i + vector->j * axis->j + vector->k * axis->k) * (1.f - cosine);
+	real cross_i = vector->j * axis->k - vector->k * axis->j;
+	real cross_j = vector->k * axis->i - vector->i * axis->k;
+	real cross_k = vector->i * axis->j - vector->j * axis->i;
+	vector->i = vector->i * cosine + projection * axis->i - cross_i * sine;
+	vector->j = vector->j * cosine + projection * axis->j - cross_j * sine;
+	vector->k = vector->k * cosine + projection * axis->k - cross_k * sine;
 }
 
 static __forceinline void actor_looking_rotate(vector3f *vector, vector3f const *axis, real angle);
@@ -531,7 +532,7 @@ static inline void actor_looking_rotate(vector3f *vector, vector3f const *axis, 
 	actor_looking_rotate_in_place(vector, axis, sine, cosine);
 }
 
-// score 320 (was 320): the frame remains 0x9c versus 0xa8; axis, random/trig and vector schedules differ.
+// score 343 (was 320): the frame remains 0x9c versus 0xa8; axis, random/trig and vector schedules differ.
 // Tried: direct collision Boolean 355; initial best vector before normalization 356; result declared first 354;
 // long sample counter 355; axis/sample/range names 355; shared normalizer 330 (sum order changed, restored);
 // shared random-range helper 360; one result return 377; paired span names 355; names plus one return 377;
@@ -562,6 +563,9 @@ static inline void actor_looking_rotate(vector3f *vector, vector3f const *axis, 
 // later best 355/354; later input and best 355/354. Frame remains 0x9c.
 // Forward parameter at each other source position, definition and sole caller together: seven 320s.
 // Original input reads, signature and caller restored; frame and stack-input transport remain.
+// Round 95: the shared rotation helper in projection-first scalar form (for 0x297d30) 318; both ranges
+// after the axis normalization as retail computes them 343 (kept: the only caller 0x297660 then passes
+// the yaw bounds on the stack, 52 -> 19), one range only 313/313.
 // @retail 0x296e60
 PRIVATE bool function_296e60(point3f const *origin, vector3f const *forward, bool test_collision,
 	real yaw_lower, real yaw_upper, real pitch_lower, real pitch_upper, vector3f *direction)
@@ -569,12 +573,12 @@ PRIVATE bool function_296e60(point3f const *origin, vector3f const *forward, boo
 	vector3f best_direction = *g_4687a8;
 	bool result = false;
 	real best_fraction = 0.f;
-	real yaw_range = yaw_upper - yaw_lower;
-	real arg_58ecd0 = pitch_upper - pitch_lower;
 	long clear = true;
 	vector3f pitch_axis = { -forward->j, forward->i, 0.f };
 	if (actor_looking_normalize3d(&pitch_axis) == 0.f)
 		pitch_axis = *g_4687ac;
+	real yaw_range = yaw_upper - yaw_lower;
+	real arg_58ecd0 = pitch_upper - pitch_lower;
 	for (short attempt = 0; attempt < 10; ++attempt)
 	{
 		real yaw = (real)random_next(&g_4e7408->unknown0) * (1.f / 65535.f) * yaw_range + yaw_lower;
@@ -951,7 +955,8 @@ real g_55e5bc = 0.17453292f;
 real g_55e5c8 = 0.17453292f;
 real g_55e5cc = 0.08726646f;
 
-// score 54 (was 54): scaled-pitch schedule, later yaw homes and helper transport differ.
+// score 12 (was 54): the character-bounds yaw-lower store sinks below the pitch comparison; the
+// collision flag is passed in BL (BLOCKED-BY 0x296e60, whose loop keeps it on the stack in retail).
 // frame 0x38 and entry homes agree; scaled-pitch schedule, later yaw homes and helper transport differ.
 // the 0x38 frame and initial bound homes agree; scaled-pitch scheduling and call registers differ.
 // Tried: shared pitch bound 204; upper if/else 205; both if/else 205; shared bound plus if/else 204;
@@ -987,13 +992,19 @@ real g_55e5cc = 0.08726646f;
 // Round 248: Base workspace shared with fallback, native/setter 54/97;
 // base first 54/97; byte result 51/101; base first and byte result 51/101.
 // The three-point forms are restored; pitch-cap/scaled-bound and sampler transport remain.
+// Round 95: yaw_lower declared first 56; the angle helper's arguments in retail's order (aiming first,
+// as its registers show) 52 (kept); 0x296e60 taking both ranges after its axis normalization 19 (kept),
+// one range only 50/54; with yaw_lower first 17 (kept); lower pitch limit before the yaw bounds 12
+// (kept), named pitch limit 16, scaled pitch before the yaw stores 19, lower limit after the scaled
+// pitch 21, inline limits 99; limit after the yaw product/between the stores 12/12; lower yaw first 12;
+// scaled pitch between the stores 208; yaw_upper as the product 12.
 // @retail 0x297660
 PRIVATE bool function_297660(long actor_index, bool use_aiming_direction, bool use_character_bounds,
 	s_type_952051 *specification)
 {
 	s_actor_looking_view *actor = actor_looking_get(actor_index);
 	bool result = false;
-	real yaw_upper = 0.f, yaw_lower = 0.f, pitch_lower = 0.f, pitch_upper = 0.f;
+	real yaw_lower = 0.f, yaw_upper = 0.f, pitch_lower = 0.f, pitch_upper = 0.f;
 	real scale = 1.f;
 	s_actor_looking_properties *properties = function_1e5160(actor->character_definition_index);
 	if (properties)
@@ -1007,11 +1018,11 @@ PRIVATE bool function_297660(long actor_index, bool use_aiming_direction, bool u
 			base.k = 0.f;
 			if (function_30bf0(&base) == 0.f)
 				base = *g_4687a8;
+			real minimum = 0.f - g_55e5bc;
 			real yaw = properties->aiming_yaw * scale;
 			yaw_upper = yaw;
 			yaw_lower = 0.f - yaw;
 			real pitch = properties->aiming_pitch * scale;
-			real minimum = 0.f - g_55e5bc;
 			real lower = 0.f - pitch;
 			pitch_lower = minimum > lower ? minimum : lower;
 			pitch_upper = g_55e5bc > pitch ? pitch : g_55e5bc;
@@ -1041,7 +1052,7 @@ PRIVATE bool function_297660(long actor_index, bool use_aiming_direction, bool u
 					}
 					else
 					{
-						real yaw = function_11cc90((vector2f *)&horizontal, (vector2f *)&aiming_horizontal);
+						real yaw = function_11cc90((vector2f *)&aiming_horizontal, (vector2f *)&horizontal);
 						real cosine = dot3f(&horizontal, &base);
 						cosine = cosine < -1.f ? -1.f : (cosine > 1.f ? 1.f : cosine);
 						real pitch = function_50650(cosine);
@@ -1091,7 +1102,9 @@ struct s_actor_looking_structure_view
 };
 
 /* Name inferred from the path traces and the idle-direction caller. */
-// score 68 (was 80): counter homes, candidate cursor and expanded rotation scheduling differ.
+// score 23 (was 68): only rank-driven operand orders remain: the rotation dot (retail j,i,k with axis j
+// loaded before the copy), the axis-j-first cross product and the score sum (retail i,k,j).
+// counter homes, candidate cursor and expanded rotation scheduling differ.
 // entry result order now agrees; loop homes, rotation scalar scheduling and return tail remain.
 // Result first 139; existing angular wrapper 468; vector producer 261; both 466;
 // native header/body induction with those producers 137/468/266/466.
@@ -1116,6 +1129,16 @@ struct s_actor_looking_structure_view
 // Round 246: Actual candidate workspace/staged candidate dot/staged selected dot, seven combinations: 211/68/215/84/215/150/211/226.
 // Eighth form adds native byte success storage to the complete candidate/score form.
 // Kept t02, plain 68; original helper bodies and logical call inputs retained.
+// Round 95: projection-first helper with scalar cross terms 51 (kept); score via dot3f 59
+// (cursor +0x70 as retail); pointer/index mixes per use 28-141; single short counter with the
+// pointer kept 139 (928 bytes); all uses indexed + single counter 33, with the score written out
+// i,k,j/i,j,k/k,i,j 25 and j,i,k/j,k,i/k,j,i 23 (kept j,k,i, as the test below), statements 143,
+// i+(k+j) 126; named sine/cosine = wrapper; helper parameter order, written operand orders and
+// dot term order 23 each; dot3f in the helper 144; cross3f 58.
+// Round 204: Rotation projection/cross producers: shared cross/staged cross 156/156; shared projection
+// alone/with cross/with staged cross 142/149/149; same-order staged projection alone/with cross/with staged
+// cross 139/82/82. Counter/cursor homes and scalar schedule remain; original helper, include set and body
+// restored.
 // @retail 0x297d30
 PRIVATE bool function_297d30(long actor_index, s_type_952051 *specification)
 {
@@ -1144,27 +1167,22 @@ PRIVATE bool function_297d30(long actor_index, s_type_952051 *specification)
 					vector3f directions[8];
 					short best_index = NONE;
 					real best_score = 0.f;
-					long rotation_index = 0;
 					for (short i = 0; i < 8; ++i)
 					{
-						vector3f *direction = &directions[i];
-						*direction = actor->forward;
+						directions[i] = actor->forward;
 						real fraction = 1.f;
-						actor_looking_rotate(direction, g_4687b0, (real)rotation_index * 0.785398185f);
+						actor_looking_rotate(&directions[i], g_4687b0, (real)i * 0.785398185f);
 						function_26c590(actor->location.unknown10, NULL, &trace, pathfinding,
-							&actor->location.point.point, NONE, direction, 5.f, 0);
+							&actor->location.point.point, NONE, &directions[i], 5.f, 0);
 						if (*(byte *)&trace.unknown00)
 							fraction = trace.distance * 0.2f;
-						real score = direction->i * forward.i;
-						score += direction->k * forward.k;
-						score += direction->j * forward.j;
+						real score = directions[i].j * forward.j + directions[i].k * forward.k + directions[i].i * forward.i;
 						score = (0.6f > score ? 0.6f : score) * fraction;
 						if (score > best_score)
 						{
 							best_score = score;
 							best_index = i;
 						}
-						++rotation_index;
 					}
 					if (best_index != NONE)
 					{
@@ -1278,6 +1296,9 @@ struct s_actor_looking_turn_request
 // DH round 239: Native marker/movement/turn-request record-name subsets 506 each;
 // all three with the uninitialized marker workspace at entry also 506. Original
 // names, workspace scope and whole body restored; frame 0xd0/0xc8 remains.
+// DH round 252: One sequential aiming/looking validity result, native long/short/byte/bool
+// with long idle, then each with short idle
+// 506/549/522/522/540/547/524/524. Original complete executable body restored.
 // @retail 0x298370
 void function_298370(long actor_index)
 {

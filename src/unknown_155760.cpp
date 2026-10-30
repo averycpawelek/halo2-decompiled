@@ -158,10 +158,29 @@ s_object *function_badc0(long object_index, dword type_mask);
 bool function_0c7070(long object_index);
 long function_10f5f0(long object_index);
 
-// @retail 0x155810
-// score 78 (was 78): retail pushes esi and edi at the top and keeps a zero in esi for the
+// score 32 (was 32): frame, shared zero, delayed saves and seat loads agree; the
+// label result still materializes a Boolean and zero-extends it, adding four bytes.
+// Earlier: retail shared esi zero for the result/mode and saved ebp only for the
+// label; ours saved ebp at entry and stored literal zero.
+// Round 411: seat-word/query/label/both-query-label producers 81/79/71/71 (fast);
+// word+query/word+label/all/all with one result exit 81/65/65/53. Removing the
+// one-use seat/definition receivers on that graph 53/53. On label-result ownership,
+// early invalid return/shared result/both 85/32/103; shared short result kept, plain 32.
+// Constant label success 90; dword/Boolean result 31/69 (Boolean loses callers);
+// final binary result test with short/dword storage 96/92. Dword one-point gain restored.
+// Earlier 78 (was 78): retail pushes esi and edi at the top and keeps a zero in esi for the
 // mode, and it pushes ebp only around the call that fills it; ours pushes ebp in the
 // prologue, which shifts every stack offset, and retail returns the 1-results in eax
+// Round 413: comparison-result short/long/word/dword/byte 32/31/32/31/32;
+// short/long result tested against one 39/32; label result stored before mode 32.
+// Wider comparison results save two bytes but only one score point; original Boolean restored.
+// Earlier: retail pushes esi and edi at the top and keeps a zero in esi for the
+// Round 206: Shared query/label success with conditional/if modes, constant/accepted/long-query/seat-flag
+// results [54, 13, 54, 28, 52, 41, 88, 102]. Mode complement 12; result-first/complement/immutable query [51, 51, 51].
+// Named label, label-first admission, common mode result, query-valued direct success [13, 39, 95, 91].
+// Shared-guard forms (13 plain; 12 fast) repeat the query test and require an exact match; all restored.
+// Native short/long mode results by conditional / complete arms [30, 36, 30, 36]; preselected modes [55, 55].
+// @retail 0x155810
 short function_155810(long unit_index, short *mode)
 {
 	short result = 0;
@@ -188,17 +207,21 @@ short function_155810(long unit_index, short *mode)
 				if (function_0c7070(unit_index))
 				{
 					*mode = 1;
-					return 1;
+					result = 1;
+					goto done;
 				}
-				if (label == 0x400004a)
+				bool special_label = label == 0x400004a;
+				if (special_label)
 				{
 					*mode = 3;
-					return 1;
+					result = special_label;
+					goto done;
 				}
 			}
 		}
 		*mode = 2;
 	}
+done:
 	return result;
 }
 

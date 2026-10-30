@@ -40,7 +40,11 @@ long function_26d100(vector3f const *up, long *unknown, s_collision_result_1697c
 
 /* finds the location of the object's root: a unit's (0), a vehicle's (1),
    otherwise the pathfinding location under its center */
-// score 89 (94 with a volatile read of location, dropped in review): query homes, case-tail and point-copy scheduling still differ.
+// score 89 (was 89): Object receiver, pre-dispatch defaults, query homes and case/copy scheduling remain. Per-
+// use/default-only receiver 138/102; default-only with whole center 106; early independent index
+// with per-use/default-only 135/95; early marker equivalents 133/95; early index plus whole center
+// 109. Original observations and case bodies restored.
+// Earlier: query homes, case-tail and point-copy scheduling still differ.
 // case-tail and point-copy scheduling differ; nine excess bytes remain.
 // Query index captured after the location guard: kind zero/one/both 150/158/155;
 // null-output-first counterparts 167/158/155; result assigned per dispatch arm 140/140.
@@ -55,6 +59,11 @@ long function_26d100(vector3f const *up, long *unknown, s_collision_result_1697c
 // Round 248: Shared index/object/both/marker/index-marker/object-marker query outputs
 // 100/101/130/101/130/130; early shared index-object/index-marker 136/136.
 // Original body restored; pre-dispatch initialization, output homes and case tails remain.
+// Round 251: independent result/owner/marker query-home names, all seven subsets 89 each; complete point-home names 89. Original independent case outputs restored. Earlier location-slot volatile read 94 was dropped in review.
+// Round 253: Independent early per-case scalar roles
+// index/object/index-object/marker/index-marker/object-marker/all 82/82/85/83/84/83/124; all with
+// independent early points 124. Early indices with native center copy/point setter 102/82.
+// Seven-point forms excluded; original complete body restored.
 // @retail 0x26bfa0
 void function_26bfa0(long object_index, long *location_index, s_location_view *location)
 {

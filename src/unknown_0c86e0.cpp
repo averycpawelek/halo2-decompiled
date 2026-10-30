@@ -140,6 +140,10 @@ static __forceinline long weapon_get_zoom_out_sound(long weapon_index)
 // Round 267: masked slot/header record/pool descriptor/header table 107/119/107/117;
 // descriptor with byte/long slot 111/114; preserved-state return 126, with header 129.
 // Original producers and complete executable body restored.
+// Round 270: player/weapon/both sentinel declarations first 119/107/119;
+// native signed-byte slot alone/with player/with weapon/with both 111/123/111/123;
+// both sentinel declarations with consistent direct reset-unit observations 150.
+// Original producers and complete executable body restored; fresh lookup remains.
 // @retail 0xc86e0
 void function_c86e0(long unit_index, bool keep_weapon_zoom)
 {

@@ -107,6 +107,12 @@ PRIVATE __forceinline void scripted_vector_add_scaled(vector3f const *a, vector3
 // Round 197 fast trials: Existing cross helper with up/forward/both scalar inputs, output
 // last/first and actual vector return 84, 72, 95, 83, 72, 95, 156, 153.
 // Forward scalar inputs with up by pointer: 72 with output first or last; four-point lead reverted.
+// Round 77 (plain): the scale/add/add helper chain straight into velocity 84 (0xc frame, but each
+// sum commutes: retail accumulates in the forward product's register); chain into the working
+// vector with the last step writing velocity 86; per-component three-term sums 93 and through
+// vector3f_assign 93 (both need the two helpers as plain definitions, which 0x1c1e70 accepts);
+// forward and left summed per component, up through add-scaled 93. Retail stores nothing of
+// velocity until all three sums are done and loads up.j early (xmm7), spilling two left products.
 // @retail 0x10b010
 void function_10b010(long object_index, real forward_speed, real left_speed, real up_speed)
 {

@@ -132,15 +132,18 @@ static __forceinline char *upload_copy_ab(char *destination, char const *source,
 	return destination;
 }
 
-// score 40 (was 40): the string pointer and the character counter are kept in different registers
-// here, and an extra register is pushed and restored around the copy loop. Tried: count before
-// start in the parameter list 40; the length in a named local after the sign tests 40;
-// string + start with start unmodified 28 but start then arrives in edx (0xb5f10 differs);
-// that with a plain string parameter 41; start = string + start 40.
-// Cursor displacement with fixed/explicit maximum, unequal/ordered end tests and signed/unsigned
-// returns: eight forms 36 each; threshold rejected, shared find changed.
-// that with a plain string parameter 41; start = string + start 40; a local copy of the start
-// 28, but the start then arrives in edx and the matched caller 0xb5f10 differs.
+// score 40 (was 40): retail moves the start from ECX into EDI at entry so the inlined length scan
+// counts in ECX and walks in EDX (as matched 0xb61d0 does); ours keeps the start in ECX, counts in
+// EDX and walks in EDI, so EDI is saved with EBX around the scan. Tried: count before start in the
+// parameter list 40; the length in a named local after the sign tests 40; string + start with start
+// unmodified 28 but start then arrives in edx and the matched caller 0xb5f10 differs (also as
+// `&string[start]`); that with a plain string parameter 41; start = string + start 40; cursor
+// displacement with fixed/explicit maximum, unequal/ordered end tests and signed/unsigned returns:
+// eight forms 36 each (shared find changed). Round 35, one-file harness (aligned/positional,
+// current 16/40): early returns 21/42 (--fast 48); nested length test 16/40 (--fast 40);
+// `length >= start + count` 17/40; all 23 other parameter orders 16-17/40; a const method of the
+// text struct, with or without noinline, 18/41 (0xb5f10 then differs); no `volatile` with a
+// noinline declaration 22/34 (0xb5f10 differs).
 // @retail 0xb6220
 bool function_b6220(char const *volatile string, long start, long count, char *destination)
 {
@@ -324,6 +327,25 @@ bool function_7af40(s_type_99af70 const *address);
 // DL180: open inline 32; open noinline 32; valid inline 32; valid noinline 90; both inline 32;
 // open inline/valid noinline 90; open noinline/valid inline 32; both noinline 90. Original
 // executable body restored.
+// Round 5: retail reads connection->endpoint once for the three clearing stores and again for the
+// flag (`or byte`, as `flags |= 0x40` on the word gives) and for the open call. Those reads with
+// the existing copy 111 (the counter's split temporary takes EBX and the address then arrives in
+// EAX; 0xb40b0 61); the state store first, `++`, `+= 1` and member spellings 111 each; the copy
+// before the counter 35; with strncpy and the terminator written out the counter stays an in-place
+// `inc` and the convention holds: 17 (the copy's destination is then ECX and the terminator
+// `[edi + 0xb3]`, retail ESI and `[esi + 0x7f]`; and the address check's false exits take a long
+// jump to the final return, where retail's go to the check's own return after its loop: 249
+// bytes); with that form an early `return false` 17, an inner `return false` 17, an else around the
+// close 17, a single result 106; the address check's loop with a single exit 17 (0x7aec0 breaks).
+// strncpy alone 36. A compile-only probe splits the counter whenever the destination survives the
+// call in a callee-saved register (existing copy, a local pointer, an inline wrapper, a separate
+// block), so retail's in-place `inc` with an ESI destination still needs its source form.
+// Round 35: an early invalid-address exit with the failed open closing and returning first 35 at
+// 245 bytes (the open test inverts; the false exits then go to the close path's return); the copy
+// helper as plain inline 32 (identical); the state stored before the counter 33; the flag and the
+// open call reading the connection's endpoint again 111 (the split counter takes ebx, the address
+// then arrives in eax and 0xb40b0 stops matching). A compile-only copy without link-time code
+// generation splits the counter even with the copy written out, so it cannot screen this.
 // @retail 0xb5d40
 bool s_http_connection_ab::connect(long address, word port, char const *path, bool flag)
 {

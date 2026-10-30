@@ -152,6 +152,9 @@ __forceinline s_object_ai_data *function_28dbd5(s_handler_object_view *arg_0)
 // Round 238: Nested forced dot/scale/dot+scale/dot+cross/scale+cross/all expansion 185 each; all
 // with inline/automatic rotation 185/185. Original helper and declarations restored; frame
 // 0x11c/0x118 remains.
+// Round 250: existing staged outer/rotation/both crosses 226/185/226;
+// with sine after axis scale 222/187/222; both staged crosses before projection 233,
+// with delayed sine 205 (frame 0x118, first +0xa9). Original helper and body restored; frame 0x11c/0x118 remains.
 // @retail 0x28dbd0
 long function_28dbd0(long arg_0, long arg_1, long arg_2, s_28dab2 const *arg_3, bool arg_4)
 {

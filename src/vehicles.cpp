@@ -10,6 +10,7 @@ helpers only they call. */
 #include "unknown_0259d0.h"
 #include "bit_vector.h"
 #include "vector_products.h"
+#include "normalize3d.h"
 #include "unknown_1428b0.h"
 #include "unknown_1c62f0.h"
 #include "unknown_1cafc0.h"
@@ -525,10 +526,13 @@ PRIVATE inline void vehicle_normalize2d(point2f *v)
 
 /* direct turn control: the input turned into the frame of the velocity,
    the angle it asks the vehicle to turn, and whether it's reversing */
-// score 306 (was 324): frame 0x20 versus 0x28, initial magnitude and vector homes differ.
+// score 306 (was 306): frame 0x20 versus 0x28, initial magnitude and vector homes differ.
 // Entry magnitude/direction/shared-normalizer subsets 306/337/324/327/309/339/303
 // restored; early magnitude observation needs a match. Existing turn approach 330.
 // Shared byte writer 306, retained after plain confirmation; with turn approach/product terms 310/310.
+// Round 77: the reversing bit written as bit 9 of the flags word (word_flags_set) 314: the writer is
+// then retail's (`or/and byte ptr [esi+0x349]`, one exit each; ours split it into load/op/store), and
+// only its position against the longer retail body moves the count. Restored on that count.
 // @retail 0xef070
 void function_ef070(long vehicle_index)
 {
@@ -656,24 +660,11 @@ PRIVATE inline void vehicle_approach(real *value, real const *rates, real bound,
 
 /* a vehicle's control: its drift and boost flags, braking, the steering of
    its control type, and its root node's movement */
-// score 100 (was 100): flag carriers/writers, clamp polarity and lookup ordering differ;
-// Four-byte frame and root-rate/difference tail agree; flag carriers/writers, clamp polarity and
-// initial lookup ordering still differ.
-// Round 384: shared reversing writer, with boost-mode/active-boost subsets 179/129/185/190;
-// native root-bit counterparts 179/129/191/190; boost-mode writer alone with original/native root
-// bit 187/187.
-// On both shared writers: two-use root input 120; real rate receiver 122 (isolated seven-point
-// gain dropped); shared point difference 121; paired root/rates 104, root/difference 112,
-// rates/difference 114; all three 100.
-// Retained both shared writers and all three native root producers. Original throttle comparison
-// and every flag/vector/call value preserved.
-// Round 401: native brake bit 213; word-bit outputs 202; both 230; late braking 179, with native
-// bit/word outputs/both 128/240/258; full-width braking carrier 277. All original observations,
-// byte writers and body restored.
 // @retail 0xef4f0
 void __stdcall function_ef4f0(long vehicle_index, real *steering)
 {
-	s_vehicle *vehicle = VEHICLE_GET(vehicle_index);
+	s_vehicle_header *header = VEHICLE_HEADER_GET(vehicle_index);
+	s_vehicle *vehicle = header->vehicle;
 	byte *definition = VEHICLE_DEFINITION_GET(vehicle);
 	bool special = function_f42f0(vehicle_index);
 	bool braking = special || (vehicle->control_flags & 0x800);
@@ -682,21 +673,21 @@ void __stdcall function_ef4f0(long vehicle_index, real *steering)
 	{
 		real throttle = PIN(vehicle->throttle, 0.0f, g_4678d4);
 
-		if (throttle != vehicle->throttle)
+		if (throttle == vehicle->throttle)
 			vehicle->throttle = g_4678d4;
 	}
 	*steering = 0.0f;
-	byte_flags_set(&vehicle->flags348, 3, (vehicle->control_flags & 2) ||
+	word_flags_set((word *)&vehicle->flags348, 3, (vehicle->control_flags & 2) ||
 		TEST_FIELD_BIT(VEHICLE_DEFINITION_FLAGS(definition)->bit4) &&
 		(vehicle->throttle > 0.0f && 0.0f > vehicle->speed || 0.0f > vehicle->throttle && vehicle->speed > 0.0f));
 	if (TEST_FIELD_BIT(VEHICLE_DEFINITION_FLAGS(definition)->bit17))
-		byte_flags_set(&vehicle->flags348, 5,
+		word_flags_set((word *)&vehicle->flags348, 5,
 			TEST_FIELD_BIT(((s_vehicle_flag_bits const *)&vehicle->control_flags)->bit11));
 	*(word *)&vehicle->flags348 &= ~FLAG(4);
 	if (TEST_FIELD_BIT(((s_vehicle_flag_bits const *)(definition + 0xbc))->bit28) &&
 		(braking || vehicle->unknown334 > 0.0f))
 	{
-		SET_FLAG(*(word *)&vehicle->flags348, 4, vehicle->unknown334 > vehicle->unknown338);
+		word_flags_set((word *)&vehicle->flags348, 4, vehicle->unknown334 > vehicle->unknown338);
 		if (braking)
 		{
 			vector3f *input = (vector3f *)&vehicle->throttle;
@@ -706,11 +697,14 @@ void __stdcall function_ef4f0(long vehicle_index, real *steering)
 			{
 				if (vehicle->unknown350 == 1)
 				{
+					real rate;
+
 					*input = *g_4687ac;
 					if (*(real *)(definition + 0x22c) >= 0.0f)
-						vehicle->turn = *(real *)(definition + 0x22c);
+						rate = *(real *)(definition + 0x22c);
 					else
-						vehicle->turn = 0.0f - *(real *)(definition + 0x22c);
+						rate = 0.0f - *(real *)(definition + 0x22c);
+					vehicle->turn = rate;
 				}
 				else if (vehicle->unknown350 == 2)
 				{
@@ -737,11 +731,11 @@ void __stdcall function_ef4f0(long vehicle_index, real *steering)
 		break;
 	}
 
-	if ((vehicle->flags348 >> 7) & 1)
+	if (TEST_FIELD_BIT(VEHICLE_WORD_BITS(vehicle->flags348)->bit7))
 	{
 		s_vehicle *current = VEHICLE_GET(vehicle_index);
-		real dt = g_510c54->rate;
 		point3f const *root = (point3f const *)((byte *)current + *(short *)((byte *)current + 0x116) + 0x28);
+		real dt = g_510c54->rate;
 		real root_input = vehicle->unknown3e0;
 		real const *rates = (real const *)(definition + 0x1f4);
 		real bound = (0.0f > root_input ? rates[1] : rates[0]) *
@@ -771,13 +765,22 @@ __forceinline long vehicle_round(real value)
 
 /* flips a vehicle back over: a spin about its forward (or its side) for up
    to two seconds while it's upside down */
-// score 79 (was 139): strength slot +0x10/+0xc, vector scheduling and final AL differ.
+// score 12 (was 79): three products with up.j keep it in a register (retail folds it as the memory
+// operand: the first cross's k term and the side cross's i and k terms), and the fail path re-zeroes
+// AL before returning false (retail returns the entry's zero), two bytes over retail.
 // Double literals 98; shared crosses 140; both 79 (kept); angular/both scales 83/83;
 // scaled sum 83; single result/vector names 79/79; seven scalar name/scope forms 79;
-// coefficient at use 93, with shared sum 95. Only the cross-helper header is needed.
+// coefficient at use 93, with shared sum 95.
 // Round 90: `down` computed after the side cross 93 (rate then stays in xmm7, no spill); dot terms
-// i,k,j 80, k,j,i 79; dot3f for the dot 79; dot3f inside vector3f_scale for the projection 79 (that
-// whole block then equals retail, through the forward pointer, one line out of step: aligned 51 -> 44).
+// i,k,j 80, k,j,i 79; dot3f for the dot 79; dot3f inside vector3f_scale for the projection 79.
+// Round 77: `strength *= rate` 76 (strength in the rounding value's slot, as retail); with `down`
+// after the cross 93, with dot3f in vector3f_scale 76; side-block product/sum operand orders, statement
+// orders, cross3f_staged, vector3f_add_scaled / vector3f_scale + vector3f_add with a `down` local and
+// every placement of the side/down declarations 76 (down assigned before the cross) or 91 (after);
+// vector3f_add_scaled with `0.0f - forward.k` as its argument 16; the angular velocity through
+// vector3f_scale 12 (all kept); then cross3f_staged for either cross 16/18/25; `rate *= strength` 20;
+// the hand projection 20; a result per arm 30, an else arm 12, chained zero stores 14, the flag
+// cleared first 27; the condition in a bool returned at one/two exits 32/20.
 // @retail 0xef870
 bool function_ef870(long vehicle_index)
 {
@@ -809,28 +812,18 @@ bool function_ef870(long vehicle_index)
 			rate = *(real *)(definition + 0x23c);
 		else if (rate > *(real *)(definition + 0x240))
 			rate = *(real *)(definition + 0x240);
-		rate *= strength;
+		strength *= rate;
 		if (vehicle->unknown34d == 2 || vehicle->unknown34d == 1)
 		{
 			vector3f side;
-			real down = 0.0f - vehicle->forward.k;
 
 			cross3f(&vehicle->forward, &vehicle->up, &side);
-			axis.i = down * side.i + axis.i;
-			axis.j = side.j * down + axis.j;
-			axis.k = side.k * down + axis.k;
+			vector3f_add_scaled(&axis, &side, 0.0f - vehicle->forward.k, &axis);
 		}
-		angular_velocity.i = axis.i * rate;
-		angular_velocity.j = axis.j * rate;
-		angular_velocity.k = axis.k * rate;
+		vector3f_scale(&axis, strength, &angular_velocity);
 		if (*(short *)(definition + 0x1f0) == 0)
 		{
-			real dot = vehicle->forward.j * linear_velocity.j + vehicle->forward.k * linear_velocity.k +
-				vehicle->forward.i * linear_velocity.i;
-
-			linear_velocity.i = vehicle->forward.i * dot;
-			linear_velocity.j = vehicle->forward.j * dot;
-			linear_velocity.k = vehicle->forward.k * dot;
+			vector3f_scale(&vehicle->forward, dot3f(&vehicle->forward, &linear_velocity), &linear_velocity);
 		}
 		function_b77d0(vehicle_index, &linear_velocity, &angular_velocity);
 		vehicle->unknown34e++;
@@ -1543,7 +1536,8 @@ void __stdcall function_f0f50(long vehicle_index, dword const *node_mask, long n
 // @retail 0xf0f90
 bool function_f0f90(long vehicle_index)
 {
-	return (*(dword *)(VEHICLE_DEFINITION_GET(VEHICLE_GET(vehicle_index)) + 0x1ec) >> 7) & 1;
+	bool result = (*(dword *)(VEHICLE_DEFINITION_GET(VEHICLE_GET(vehicle_index)) + 0x1ec) >> 7) & 1;
+	return result;
 }
 
 void function_1d1260(s_havok_component *component);
@@ -1562,11 +1556,11 @@ void function_f0fd0(long vehicle_index, bool set)
 
 		if (set)
 		{
-			vehicle->flags348 |= 4;
+			((s_vehicle_word_flag_bits *)&vehicle->flags348)->bit2 = true;
 		}
 		else
 		{
-			vehicle->flags348 &= ~4;
+			((s_vehicle_word_flag_bits *)&vehicle->flags348)->bit2 = false;
 		}
 		if (was_set != set && vehicle->havok_component_index != NONE)
 		{
@@ -1718,6 +1712,9 @@ bool function_f12e0(long vehicle_index)
 
 /* whether the vehicle, with its flag 2 at +0x10a set, is a type 5 vehicle
    or a type 4 one of kind 1 */
+// score 1 (was 1): ours reuses the kind comparison's flags with a jmp to the
+// shared jne; retail re-tests the type. Nested conditions, a named kind local,
+// a switch and a 300 s permuter run all scored 1.
 // @retail 0xf1320
 bool function_f1320(long vehicle_index)
 {
@@ -1891,18 +1888,6 @@ real __stdcall function_f1540(long vehicle_index, short gear, real angular_veloc
 /* the gear the vehicle shifts to: neutral (NONE) when it coasts slowly, the
    reverse gear (0) or first gear when the throttle changes direction, and
    up or down a gear at its engine's shift points */
-// score 12 (was 12): downshift upper-bound residence and exit displacements differ;
-// Retail downshift loads count-minus-one into the returned register; ours preserves the prior
-// gear if lower exceeds that bound, leaving two instructions and exit displacements.
-// Round 384: delayed current 189; long result 151; single short result 175; delayed/single 191;
-// long/single 153; delayed/long/single 147; uniform current fields short/long 191/147.
-// Native higher candidate with original/delayed current and early/single exits 154/151/114/66;
-// three-use gear ordinal 66; eligibility before lower calculation 12, with ordinal 12.
-// Retained short result, delayed current, native higher candidate and eligibility-first single
-// exit; no downshift value changed.
-// Round 401: shared bound 165; test-owned downshift result 44; both 170; current-gear eligibility
-// 126, with bound/result/both 162/135/123; full-width downshift result 164. All restored;
-// upper-bound fallback remains different.
 // @retail 0xf1740
 short __stdcall function_f1740(long vehicle_index, real throttle_input)
 {
@@ -1983,15 +1968,7 @@ short __stdcall function_f1740(long vehicle_index, real throttle_input)
 					}
 					long lower = current - 1;
 
-					if (lower < 1)
-					{
-						gear = 1;
-						goto done;
-					}
-					if (lower <= VEHICLE_GEAR_COUNT(definition) - 1)
-					{
-						gear = (short)lower;
-					}
+					gear = (short)PIN(lower, 1, VEHICLE_GEAR_COUNT(definition) - 1);
 				}
 			}
 		}
@@ -4028,12 +4005,12 @@ PRIVATE inline void vehicle_iterator_new(s_type_f1af8e *iterator)
 
 /* whether a moving vehicle is within ten world units of a player on foot,
    and which */
-// score 110 (was 131): frame 0x114 agrees; player-scan allocation and scheduling still differ.
+// score 102 (was 110): frame 0x114 agrees; player-scan allocation and scheduling still differ.
 // Bounded short/word/char/byte player counts 137/130/134/129;
 // those four with result-first common exit 137/130/134/129;
 // existing velocity magnitude helper 131, native difference with/without it
 // 135/135 (match-only), plain vehicle for loop 131.
-// Original body restored.
+// Earlier body restored.
 // Y405: kept the full-width result set after the collection with one exit, 110. The collector
 // reading the unit field at every use as well gives 85 at 569/562, but 0xf7ca0 shares the
 // collector and goes 142 -> 150, so not kept.
@@ -4042,7 +4019,8 @@ PRIVATE inline void vehicle_iterator_new(s_type_f1af8e *iterator)
 // Per-use unit with positive bool/byte/word/long return 124/117/90/93;
 // existing typed player with early/bool/word/long return 124/124/90/93.
 // Word/long return name ordering at entry and after collection 90/96/93/85.
-// Current-vehicle stack home and center-address scale remain.
+// Earlier current-vehicle stack home and center-address scale differed.
+// Round 409: Three-use center pointer with short ordinal 102 (556/562, plain); complete squared-component names also 102, not kept. Long/word/byte ordinal with or without complete squared components 163/103/107; seven- and three-point forms restored. Scaled center loads and LEA now agree. Player-pool/current-vehicle/result allocation remains; collector and all call arguments unchanged.
 // @retail 0xf7a60
 bool __stdcall function_f7a60(long *vehicle_index)
 {
@@ -4065,9 +4043,10 @@ bool __stdcall function_f7a60(long *vehicle_index)
 			{
 				if (VEHICLE_GET(unit_indices[i])->parent_object_index != iterator.object_index)
 				{
-					real dx = vehicle->center.x - centers[i].x;
-					real dy = vehicle->center.y - centers[i].y;
-					real dz = vehicle->center.z - centers[i].z;
+					point3f const *center = &centers[i];
+					real dx = vehicle->center.x - center->x;
+					real dy = vehicle->center.y - center->y;
+					real dz = vehicle->center.z - center->z;
 
 					if (100.0f > dz * dz + dy * dy + dx * dx &&
 						vehicle->linear_velocity.i * vehicle->linear_velocity.i +

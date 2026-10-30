@@ -123,8 +123,11 @@ struct s_free_state_23d260
 	real pitch;
 	real roll;
 };
-
-// score 110 (was 118): the rest is register allocation in the side vector
+// score 110 (was 110): Zero/side XMM roles and speculative normalization remain; frame 0x4c agrees. Complete
+// axial/cosine-normal/affine vector contributions, masks 1/2/3/4/5/6/7, scored
+// 281/281/335/313/314/329/332; existing add-scaled affine assembly 313. Original normalizer,
+// projection, roll rows and movement restored.
+// Earlier: the rest is register allocation in the side vector
 // block: retail keeps zero in xmm1 (ours xmm3) and the side vector in
 // xmm2/xmm3/xmm4 (ours xmm1/xmm2/xmm0, retail moves side.k out of the inverse's
 // register), divides before the lahf, and stores up as k, j, i (ours k, i, j);
@@ -139,9 +142,9 @@ struct s_free_state_23d260
 // spill forward.k to a parameter slot), the transforms as __forceinline helpers (322), fresh names for the
 // scaled point (373), movement operands swapped (282), the roll if/else inverted
 // (279), a cross vector in the turn about forward (277), declaration order (same)
-// score 118 (was 118): zero XMM3 versus XMM1 and normalization/side-vector allocation remain.
+// Earlier: zero XMM3 versus XMM1 and normalization/side-vector allocation remain.
 // Roll-input snapshot 324; live yaw/pitch/roll fields 275/121/121; live forward/up/both fields 295/154/157; normalization result 319.
-// score 110 (was 118): the existing transform4x3f_apply_point/function_1427f0 called for the two
+// Earlier: the existing transform4x3f_apply_point/function_1427f0 called for the two
 // matrix blocks 603 (992 bytes, kept out of line); if/else pitch clamp 282; roll ternary 146; side j
 // and k assigned apart 118; cosine before sine 119; side.k first 118; up written j, i, k / j, k, i /
 // i, k, j 254/251/249 (1330-1333 bytes).
@@ -149,6 +152,7 @@ struct s_free_state_23d260
 // planar initialization reversed 110; up written j, k, i / j, i, k / i, k, j on that graph
 // 293/112/287; shared yaw sine/cosine 110; roll update before the pitch clamp 132;
 // a one-use normalization input pointer 107 (1329 bytes, exact-match-only). No pointer kept.
+// Round 409: Existing staged up cross alone/fallback setter/initial setter/both setters 244/243/244/238; all recover zero XMM1 and first +0xa6, last reaches 1326 bytes, but side/up/roll allocation worsens. Initial/fallback/both whole-vector setters 110; uniformly const trig values 110. Original body and normalization retained; no helper or include kept.
 // @retail 0x23d260
 void __stdcall function_23d260(void *state, void *input, void *output)
 {

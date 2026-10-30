@@ -654,7 +654,10 @@ bool function_119380(long arg_0, s_119380 *arg_1)
 void function_1e54d0(void *arg_0, long arg_1);
 bool function_bc380(long arg_0, long arg_1, long arg_2, long arg_3);
 
-// score 83 (was 83): the object table base and the looked up object are kept in different
+// score 83 (was 83): the object table base and the looked-up object are kept in different
+// registers, one word field is loaded zero-extended here and as a plain word in retail, and the
+// value stored at the 0x134 slot is sign-extended differently. Retail passes the size to 0xbc380
+// as a 16-bit argument, which needs that callee's shared declaration changed.
 // registers, one word field is loaded zero extended here and as a plain word in retail, and the
 // value stored at the 0x134 slot is sign extended differently. Round 81: retail passes the
 // size to 0xbc380 as a 16-bit argument (xor eax, eax; mov ax, ...), which needs that callee's
@@ -664,6 +667,10 @@ bool function_bc380(long arg_0, long arg_1, long arg_2, long arg_3);
 // Four-use long ordinal with retained/per-use tag and bitwise/logical predicates
 // 83/89/129/136; native word ordinal 151/164/144/155. Initial table/object and
 // result homes still differ; original body and shared allocator interface restored.
+// Round 414: Post-reset table/object/result homes, allocation-size acquisition and saved-key tests
+// remain. Native external input fields at selected/controller/allocation subsets 1-7 scored 83 each;
+// complete native input with promoted repeated selection 90. Original void input, callback declaration
+// and byte-offset reads restored.
 // @retail 0x118510
 bool __stdcall function_118510(long arg_0, void const *arg_1, bool *arg_2)
 {
@@ -751,8 +758,7 @@ struct s_118b80
 struct s_118b81
 {
     long field_0;
-    byte field_4;
-    byte field_5[3];
+    dword field_4;
     long field_8;
     long field_c;
 };
@@ -764,80 +770,7 @@ bool havok_component_any_rigid_body_active(s_havok_component *arg_0);
 void function_1e68a0(s_character_physics_update_input_datum_a *arg_0, s_source_a *arg_1,
     long arg_2, long arg_3, long arg_4, bool arg_5, bool arg_6, bool arg_7,
     bool arg_8, bool arg_9, point3f *arg_10, point3f *arg_11, point3f *arg_12);
-void function_1e5a60(s_biped_physics_result *arg_0, s_biped_physics_input const *arg_1, void *arg_2);
-// score 78 (was 78): Frame 0x6c and builder setup agree; literal-one test allocation, separate result mask and final byte stores remain.
-// Earlier: the builder now gets retail's values (0xc0 bit 8 as its first flag, the
-// 0x12c bit 5 as its second; they were in the first and fourth places) and the parent handle is
-// chosen in an if/else. Left: retail loads the definition word with `mov al, 1; test al, cl`,
-// tests the result bit and its copy separately (`test cl, 1`, then `mov al, cl; and al, 1`),
-// writes the output and state bits with byte or/and, and evaluates the 3/1 scale after the
-// state test. On the kept form: the existing flag setter for the two output bits 86, also for
-// the state bit 101 (633 bytes), with the scale as a shifted bit test 98, with that scale inside
-// each state branch as a ternary 95, as an if 84. Earlier (with the old builder values): frame
-// agrees; target size 225; global optimization off 639; saturation before increment 139;
-// shared output-bit branch 95; direct final state result 101; absent-component exit 99; signed
-// flags with early Boolean 99; long state with early Boolean 135; counter reset before
-// increment 103; threshold default and override 99; snapshot after word 95; earlier threshold
-// 129; unsigned saturation 97; unsupported counter first 106; valid byte last 96; native word
-// field 95; native counters 95; both native fields 95; returned position 144; active-query
-// result 95; native source receiver 95; definition subrecord at use 95; inactive-body exit 95;
-// native flag snapshot 129; low parent bit first 95; absent-state arm first 98; split Boolean
-// output tests 99; copied position 162; shared threshold product 101; existing definition view
-// 95; counter names 95; existing mask setter 112; result through setter 95; setter with split
-// output tests/direct threshold 106/101; short query 124; builder scope 98; direct
-// parent/read-only tag receivers 95/95; admission word/mask 136/166; native output byte 95;
-// shared counter and output decision 123; shared counter carrier 95; byte with shared counter 95;
-// reversed adjacent output publications 95; final native word 102.
-
-// Previous forms at 87 and 95: Frame 0x6c agrees; saved-bit/word/handle allocation and final state width remain.
-// Previous forms at 87 (was 95): Frame 0x6c agrees; saved-bit/word/handle allocation and final state width remain.
-// Earlier: Frame 0x6c agrees; saved-bit/word/handle allocation and final state width remain.
-// Earlier note: Frame 0x6c agrees; saved-bit/word/handle allocation and final state width remain.
-// Frame 0x6c agrees; saved-bit/word/handle allocation and final state width remain.
-// frame 0x6c agrees; flag/handle carriers and final state stores differ.
-// Target size 225; global optimization off 639; saturation before increment 139;
-// shared output-bit branch 95; direct final state result 101.
-// Word-flag/handle registers and call Boolean roles still differ.
-// absent-component exit 99; signed flags with early Boolean 99; long state with early Boolean 135;
-// counter reset before increment 103; threshold default and override 99.
-// Frame agrees; word/Boolean carriers and final state width remain. Snapshot after word 95; earlier threshold 129; unsigned saturation 97; unsupported counter first 106; valid byte last 96 (fast).
-// flag-word/handle registers and final flag-store width still differ.
-// native word field 95; native counters 95; both native fields 95; returned position 144
-// active-query result 95; native source receiver 95; definition subrecord at use 95
-// inactive-body exit 95.
-// Flag/handle carriers and final state width remain; native flag snapshot 129;
-// low parent bit first 95; absent-state arm first 98; split Boolean output tests 99;
-// copied position 162; shared threshold product 101; existing definition view 95; counter names 95.
-// Saved first bit byte/word/signed-byte 120/119/120; query byte/signed-byte 101/101;
-// word-bit with byte query 127; signed-bit/query 119; unsigned dword query 112.
-// Existing mask setter 112; result through setter 95; setter with split output tests/direct threshold
-// 106/101; short query 124; builder scope 98; direct parent/read-only tag receivers 95/95.
-// Admission word/mask 136/166; native output byte 95; shared counter and output decision 123;
-// shared counter carrier 95; byte with shared counter 95; reversed adjacent output publications
-// 95; final native word 102. Word/Boolean allocation and final store width remain.
-// Direct builder handle/flag/both 127/129/127; state before counters 114; direct handle and earlier state
-// 128; supported/unsupported/both increments before dispatch 99/107/104. All restored.
-// Entry and builder setup agree; definition-bit test, separate result mask and final state-byte stores remain.
-// metadata-flags 89; result-byte 87.
-// metadata-flags-result-byte 89; independent-output-tests 78.
-// metadata-flags-independent-output-tests 99; result-byte-independent-output-tests 78.
-// metadata-flags-result-byte-independent-output-tests 99; metadata-before-builder 114.
-// bool-result 93; byte-state 96.
-// bool-result-byte-state 111; word-result 84.
-// word-result-byte-state 102; byte-state-shifted-scale 96.
-// bool-result-byte-state-shifted-scale 111; word-result-byte-state-shifted-scale 102.
-// Round 53: output bits as if/else word bitfields 86 (byte RMWs as retail), result bit as a bitfield 86,
-// output bits through forward_flags_set 86; state bit byte writes 94, byte clear 86, byte set 89,
-// forward_flags_set 101 (byte read and RMWs as retail, 633 bytes); that plus the scale per state arm
-// as a shifted-bit ternary 84 (state tail now retail's sequence), with the bit named before the
-// state test 82; per-arm scale alone 87, shifted 101, named bit 96; named result bit before or after
-// the counters 84. Left: retail's `mov al, 1; test al, cl` and a first `test cl, 1` before `and al, 1`.
-// Output-only result byte/bool/word/dword 84/84/85/85; with definition mask 87/87/88/88.
-// Common counter-output stores with branch saturation, long/dword/short/word 93/93/93/93;
-// common counter-output stores with completion saturation, long/dword/short/word 93/93/93/93.
-// Round 276: Native result flags dword/long, with bool/byte input-valid field, 78/78/78/78;
-// Round 276: word/short result flags with both valid-field domains 74/74/74/74 at 651 bytes.
-// Round 276: Four-point forms rejected; original field declarations and body restored.
+void function_1e5a60(void *arg_0, s_biped_physics_result *arg_1, s_biped_physics_input const *arg_2);
 // @retail 0x118b80
 void __stdcall function_118b80(long arg_0)
 {
@@ -872,11 +805,17 @@ void __stdcall function_118b80(long arg_0)
                 local_9, (bool)((local_8 >> 8) & 1), TEST_FIELD_BIT(local_1->flags.flag5), false,
                 false, local_7, &local_6,
                 (point3f *)&local_1->forward, (point3f *)&local_1->control);
-            local_10.field_14 = true;
             if (!(bool)((*(dword *)local_12 >> 4) & 1))
+            {
+                local_10.field_14 = true;
                 local_10.field_44 = *(long *)((byte *)local_1 + 0x1a8);
-            function_1e5a60((s_biped_physics_result *)&local_11,
-                (s_biped_physics_input const *)&local_10, local_13);
+            }
+            else
+            {
+                local_10.field_14 = true;
+            }
+            function_1e5a60(local_13, (s_biped_physics_result *)&local_11,
+                (s_biped_physics_input const *)&local_10);
             if (local_11.field_4 & 1)
             {
                 long local_14 = *((byte *)local_1 + 0x130) + 1;
@@ -893,24 +832,19 @@ void __stdcall function_118b80(long arg_0)
                     local_15 = 0xfe;
                 *((byte *)local_1 + 0x131) = (byte)local_15;
             }
-            if (local_11.field_4 & 1)
-                *((byte *)local_1 + 0x12d) |= 1;
-            else
-                *((byte *)local_1 + 0x12d) &= ~1;
-            if (local_11.field_4 & 1)
-                *((byte *)local_1 + 0x12c) |= 0x80;
-            else
-                *((byte *)local_1 + 0x12c) &= ~0x80;
-            real threshold_scale = (*(dword *)local_12 & 8) ? 3.0f : 1.0f;
+            forward_flags_set(&local_1->flags, 0x100, (bool)(local_11.field_4 & 1));
+            forward_flags_set(&local_1->flags, 0x80, (bool)(local_11.field_4 & 1));
             if (TEST_FIELD_BIT(local_1->flags.flag5))
             {
+                real threshold_scale = (bool)((*(dword *)local_12 >> 3) & 1) ? 3.0f : 1.0f;
                 if (*((byte *)local_1 + 0x131) * g_510c54->rate > threshold_scale * 0.15f)
-                    local_1->flags.flag5 = false;
+                    forward_flags_set(&local_1->flags, 0x20, false);
             }
             else
             {
+                real threshold_scale = (bool)((*(dword *)local_12 >> 3) & 1) ? 3.0f : 1.0f;
                 if (local_7 || *((byte *)local_1 + 0x130) * g_510c54->rate > threshold_scale * 0.15f)
-                    local_1->flags.flag5 = true;
+                    forward_flags_set(&local_1->flags, 0x20, true);
             }
         }
     }
@@ -1257,6 +1191,9 @@ void __stdcall function_1e55d0(s_biped_physics_move *arg_0, void *arg_1, s_biped
 // with signed force 62.
 // Round 263: object/input/both flags read at each use 156/132/121; existing basis helper
 // inline/noinline declarations 94/94; inline with those observations 156/132/121. All restored.
+// Round 414: Frame 0x1f0 agrees; first basis MOV/LEA, component loads and force publication remain.
+// Existing vector assignment at requested/output-basis/velocity copy masks 1-7 scored
+// 269/149/290/101/280/162/302; all copies with terminal flag setter 302. Native copies restored.
 // @retail 0x118700
 bool __stdcall function_118700(long arg_0)
 {

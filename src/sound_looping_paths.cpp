@@ -541,6 +541,9 @@ PRIVATE __forceinline void sound_environment_play_cue(long tag)
 // DL175: Native short/word listener ordinals [346, 346]; const aggregate sentinel tags 270; short then
 // word ordinals with const/mutable tags [346, 346, 346, 346]; signed-byte listener 346. Mutable
 // aggregate alone is an excluded archived repeat. Original listener domain and bulk fill restored.
+// Round 205: updater/angle/environment-consumer inline versus noinline
+// declarations, all eight coordinated combinations 223. Every provider
+// and caller declaration restored; frame and BSP/camera/duration homes remain.
 // @retail 0x18bb80
 void __stdcall function_18bb80(real elapsed)
 {

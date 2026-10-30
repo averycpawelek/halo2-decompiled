@@ -68,7 +68,7 @@ static __forceinline void capsule_update_1e55d0(c_z_shape_view *shape, byte *com
 	else *(dword *)out &= ~2;
 }
 
-// score 319 (was 353): retail's aligned frame (and esp, -16; 0x94) and prologue. Left: the move and
+// score 319 (was 319): retail's aligned frame (and esp, -16; 0x94) and prologue. Left: the move and
 // input pointers trade EBX and EDI (retail move EBX, input EDI, physics read from its stack slot at
 // each use; ours keeps physics in ESI), and the inlined 0xb77d0 lacks retail's velocity null test
 // (1176 bytes against 1164).
@@ -128,6 +128,8 @@ static __forceinline void capsule_update_1e55d0(c_z_shape_view *shape, byte *com
 // Round 390: Separate target inline/noinline contracts with manual/aligned-byte/automatic
 // capsule lifetimes and aligned-byte period observation: 353/353/305/305/307/307/306/306. Original body restored.
 // Aligned forms recover frame 0x94 but lose four matched controls; declaration contracts do not fix it.
+// Round 269: velocity pointer 319; direct state parameter 319; both 319; direct input parameter 319;
+// velocity/input 319; state/input 319; all 319; all with shared squared length 319. Original body restored.
 // @retail 0x1e55d0
 void __stdcall function_1e55d0(s_biped_physics_move *move, void *physics, s_biped_physics_output *output)
 {

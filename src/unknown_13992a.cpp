@@ -102,6 +102,10 @@ long function_14de70(long arg_1);
 // divisors 216, plus progress/color/both cursors 208/208/208; both input/output cursors 160.
 // Mask/player register roles remain tied to the outside-queue hands output convention;
 // original score expressions and copy loops retained.
+// Round 204: Fresh records at every use: player 650; current object 726; both 977; parent 470;
+// player/parent 697; current/parent 785; all three 1094; all three plus child 1094. Every expanded lookup
+// graph regresses and is restored. Mask/player register roles and tag-call scheduling remain; protected
+// interfaces and all original values/calls preserved.
 // @retail 0x13992a
 void function_13992a(byte *arg_1, long arg_2)
 {

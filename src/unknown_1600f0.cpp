@@ -1429,6 +1429,10 @@ PRIVATE inline long score_string_list_1608e0()
 // Round 403: native rectangles; ordinary height/fade storage and direct first-color
 // output, masks 1-7: 734/713/753/726/764/742/783; all without unused parameter
 // addresses 783. Original scalars, color copy and complete body restored.
+// Round 203: Shared body-row sum/header bottom/both 689 each; all common column starts alone/with row
+// sum/with bottom/with both 726 at 2826 bytes; complete graph with signed-word body-row sum 728. All
+// actual expression locals are reused, but they do not recover frame 0x79c, viewer EBX, coordinate/color
+// homes or clamp registers. Original complete body and five native rectangles restored.
 // @retail 0x1608e0
 void __stdcall function_1608e0(long player_index, s_score_panel_1608e0 *panel, real alpha)
 {
@@ -1691,6 +1695,8 @@ PRIVATE __forceinline void score_text_161420(byte const *widget, long valid)
 // Round 262: non-template rectangle/widget-prefix text contracts 122/122;
 // with indexed team traversal 148/148; widget-prefix byte/short validity offsets
 // 122/122; ordinary inline prefix and invalid-widget exit 122/122. Restored.
+// Round 413: actual text receiver/word buffer/color/text bounds as the single member base
+// 150 each; each with indexed team traversal 148. All are 1863/1851; original helper and body restored.
 // @retail 0x161420
 void function_161420(long player_index, real alpha)
 {

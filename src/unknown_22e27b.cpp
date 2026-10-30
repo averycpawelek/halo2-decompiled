@@ -211,6 +211,9 @@ static inline real interpolate_linear(real a, real b, real t)
 // Per-iteration current-frame capture on the recovered timing graph, alone/with
 // direction/count/both 98; each with captured flags 214/655 (loses frame 0x10).
 // Original reads, native short results, timing stream and interpolation restored.
+// Round 190 on the recovered graph: native bit-1 reader 127; native bit-0 reader 233; native
+// bits 1/0 237; native bit-3 reader 182; native bits 1/3 186; native bits 0/3 229; all native
+// flag readers 230; all widened macro readers 225.
 // @retail 0x22e3cd
 void c_class_1a2c81::update(dword time)
 {

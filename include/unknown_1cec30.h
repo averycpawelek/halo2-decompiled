@@ -100,6 +100,8 @@ struct hkTransform
 	void transform_compose_in_place(hkTransform const &b);
 	void transform_set_to_inverse(hkTransform const &t);
 
+	hkRotation const &rotation_part() const { return m_rotation; }
+
 	hkRotation m_rotation;
 	hkVector4 m_translation;
 };

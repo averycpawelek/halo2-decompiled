@@ -355,38 +355,10 @@ bool __stdcall function_fa9a0(long *value)
 }
 
 /* the direction, distance and time to a target in a straight line */
-// score 58 (was 87): frame 0xc agrees; early zero/ESI save and normalization/fallback tails remain.
-// Shared point producer 81; shared inline normalize 84; shared scale-normalize 86;
-// point producer with those normalizers 78/80; conditional seconds with private/inline/scale
-// normalization 80/80/83. Shared arithmetic regrouping is exact-match-only; restored.
-// Same-arithmetic private normalizer: one magnitude exit 86; separate result 93;
-// native failure guard 87; direct complete-vector output with those 122/116/122,
-// alone 122; one magnitude exit with local home names 86. Restored.
-// Native final-time guard 87; entry/result-phase output requests 104/106;
-// entry requests with final-time guard 104; forced existing normalizer 87;
-// forced normalizer with guard 87, entry requests 104, result requests/guard 106.
-// Original body, expression grouping, output order and private helper attribute restored.
-// Complete setters: input 81; output 87; fallback 90; fallback/output 114;
-// input/output 70 (plain 70, three caller matches lost); all 104; complete
-// time arms with output/all setters 100/118. Native point/output 70; with late
-// time/full arms/conditional time 94/95/70; input/output late/entry time 94/96;
-// native point/output entry time 96; input setter/library output copy 81.
-// The 70 forms change input registers; 81 gains only six. All restored.
-// Complete fallback-source branch/conditional aggregate 122/122; corresponding
-// shared output setters 114/114; conditional output aggregate 122; explicit output
-// arms 103; selected source with conditional seconds 115; with shared delta 117. Restored.
-// Actual speed-predicate ownership at entry/delta/result boundary 92/94/71;
-// entry native width 90; entry seconds 92; selected source 102; shared input 86;
-// shared input/output 105. Result-boundary predicate plain 71 loses six caller
-// matches through its extra stacked input; all predicate forms restored.
-// Round 408: displacement aggregate with result/entry seconds 87/78; with library
-// output copy 87/78; native component-array traversal 81/58, with library copy 81/58.
-// Plain confirms component traversal with entry seconds at 58, retail length, no match loss.
 // @retail 0xfa580
 bool function_fa580(real speed, point3f const *origin, point3f const *target, vector3f *direction,
 	real *distance, real *speed_out, real *time)
 {
-	real seconds = 0.0f;
 	vector3f vector;
 
 	for (long component = 0; component < 3; ++component)
@@ -396,6 +368,8 @@ bool function_fa580(real speed, point3f const *origin, point3f const *target, ve
 
 	if (length == 0.0f)
 		vector = *g_4687b0;
+
+	real seconds = 0.0f;
 	if (speed > 0.0001f)
 		seconds = length / speed;
 	*direction = vector;
@@ -622,6 +596,12 @@ s_projectile_material_response g_547660;
 // Ordinal reset before material lookup, ancestry/entry lifetime with cursor/indexed candidates
 // 58/56/58/56; immutable current-material values with those four forms 58/56/58/56.
 // Native word input and response scan entry remain; opening body restored.
+// Round 6: counted response loop 56 (retail's single guard and counter, registers rotate, inner
+// loop unaligned), with a count guard 47, with a pointer cursor 55; the NULL-default material
+// getter shape around those 34/56/47; short walk local without/with the reference 51/34, counted
+// 65/56. Compiled alone with every argument on the stack, each form (short, word or long
+// parameter, walk local, read through the reference) loads the index as a dword, never retail's
+// word load that keeps it off the register-argument list.
 // @retail 0xfd4c0
 s_projectile_material_response *__stdcall projectile_get_material_response(s_projectile_definition const *definition,
 	short material_index)
@@ -707,7 +687,7 @@ PRIVATE inline void projectile_effect_parameters_initialize(s_effect_parameters 
 }
 
 /* pushes a projectile, and spins it at random by the push's strength */
-// score 34 (was 69): the existing random unit vector call gives retail's impulse ESI and seed EDI/EDX
+// score 34 (was 34): the existing random unit vector call gives retail's impulse ESI and seed EDI/EDX
 // (69 -> 36), the vector sums give retail's add order (34). Still differs: our build folds the
 // 1/65535 and pi/2 factors into one constant (retail multiplies by each), and loads all three axis
 // components ahead of the spin where retail folds i and j into mulss.
@@ -727,6 +707,13 @@ PRIVATE inline void projectile_effect_parameters_initialize(s_effect_parameters 
 // Shared seed receiver 69; native short/long axis index with complete setter 118/120;
 // selected-axis receiver/setter 112; memcpy axis 69; shared seed with short index,
 // axis receiver or memcpy 130/125/69. Restored.
+// Round 6: the fold is the fraction helper's: its result as a named local in the header helper
+// 14 (also unfolds 0x10cf80's form, but 0x167e86 matched -> 229 and 0x102fb0/0x17a380/0x28dbd0
+// worsen; restored); existing random-range helper from 0 to the length 65 (length hoisted).
+// With a one-use named fraction: spin local 14, spin passed straight to the scale 13 (only the j
+// product still loads j instead of copying spin), in-place 14, double spin 13, swapped add 13,
+// double product 13, fraction declared first 13. Without it: spin straight to the scale 32;
+// declaration orders 14/14/15; length local before/after the axis 93/105; spin *= quarter turn 14.
 // @retail 0xfa820
 void function_fa820(long projectile_index, vector3f const *impulse)
 {
@@ -812,7 +799,7 @@ void function_fcbc0(long definition_index, point3f const *point, vector3f const 
 
 /* the effect values of an effects block's effect (+0x58), NONE without one */
 // @retail 0xfd740
-void function_fd740(point3f const *point, byte const *effects, long unused, long index,
+void function_fd740(point3f const *point, byte const *effects, long index, long element_index,
 	long *first_value04, long *second_value04, long *first_value, long *second_value, long *first_value0c,
 	long *second_value0c)
 {
@@ -820,7 +807,7 @@ void function_fd740(point3f const *point, byte const *effects, long unused, long
 
 	if (effect_index != NONE)
 	{
-		function_1883e0(effect_index, false, point, g_47d8e0, unused, index, 0, first_value04, second_value04,
+		function_1883e0(effect_index, false, point, g_47d8e0, element_index, index, 0, first_value04, second_value04,
 			first_value, second_value, first_value0c, second_value0c);
 		return;
 	}
@@ -842,7 +829,7 @@ void function_fd740(point3f const *point, byte const *effects, long unused, long
    objects the network owns */
 // @retail 0xfd7d0
 void function_fd7d0(long object_index, point3f const *point, byte const *effects,
-	long unused, long index, long *first_value04, long *second_value04, long *first_value, long *second_value,
+	long index, long element_index, long *first_value04, long *second_value04, long *first_value, long *second_value,
 	long *first_value0c, long *second_value0c)
 {
 	long effect_index = *(long const *)(effects + 0x58);
@@ -858,7 +845,7 @@ void function_fd7d0(long object_index, point3f const *point, byte const *effects
 			if (g_4e6948->state == 2 && g_4e6948->mode != 4 && *(long *)((byte *)object + 0xd4) != NONE)
 				ignore_distance = true;
 		}
-		function_1883e0(effect_index, ignore_distance, point, g_47d8e0, unused, index, 0, first_value04, second_value04,
+		function_1883e0(effect_index, ignore_distance, point, g_47d8e0, element_index, index, 0, first_value04, second_value04,
 			first_value, second_value, first_value0c, second_value0c);
 		return;
 	}
@@ -989,6 +976,8 @@ real function_30bf0(vector3f *v);
 // Round 402: native double denominator/optimal-time/horizontal lifetimes and their pairs/all
 // 257/285/232/295/257/285/295; both native float division numerators named 232.
 // All restored; frame 0x28/0x30, rounded horizontal root and separate divisions remain.
+// Round 269: squared-distance workspace 232; root workspace 232; both 232; default flight time 266;
+// distance/default 266; root/default 266; all 266; all with the twice-used time square 266. Original body restored.
 // @retail 0xfa1a0
 bool function_fa1a0(real speed, real gravity_scale, point3f const *origin, point3f const *target,
 	real *minimum_speed, real const *time_scale, real const *forced_speed, bool high_arc, vector3f *direction,
@@ -1361,6 +1350,10 @@ void function_fcea0(long effects_index, point3f const *point, vector3f const *di
 // separate direct-counter table initialization loops 249. Original body restored.
 // Round 408: native definition pointer/reference with neither, fallback, alternate
 // or both tag snapshots 115 each. Original record layout and body restored.
+// Round 30: BLOCKED-BY 0xfd740: its unmatched body takes a pointer argument in EBX, so ours
+// cannot keep retail's zero in EBX across that call (the point then takes EBX). Flag-bit
+// member for both `|= 4` 115 (same code); tag before the flag 115 (same code); markers
+// before the scales 115; compression before the point copy 117; velocity copy first 178.
 // @retail 0xfd0e0
 void function_fd0e0(long definition_index, real scale_a, real scale_b, vector3f const *direction,
 	point3f const *point, vector3f const *normal, word index, bool attached, long object_index,
@@ -2525,6 +2518,9 @@ PRIVATE __forceinline void projectile_impact_effect_parameters(s_effect_paramete
 // Damage tag at every use with live mode/response flags, four subsets, 1203/1201/1203/1201;
 // those with native dword collision count 1201/1181/1201/1181. All restored;
 // frame 0x220/0x218, velocity contract and request homes remain.
+// Round 284: Independent effect/sound long or dword counters at their producers, four
+// combinations 1162 each; those with the collision routine declared inline 1162 each.
+// Original shared counter and declaration restored; frame and velocity contract remain.
 // @retail 0xfaa60
 void function_faa60(vector3f *velocity, long projectile_index, s_collision_result_1697c0 const *collision,
 	point3f *end_point, vector3f *displacement, short collision_count)

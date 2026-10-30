@@ -441,8 +441,13 @@ static inline s_prop_datum *prop_ref_iterator_next_256810(s_prop_ref_iterator_25
 	return prop_ref;
 }
 
-// score 107 (was 107): retail takes the actor array from g_4f55f0 and keeps the element pointer in a stack slot,
-// ours reads another global and keeps it in ebp; our frame is eight bytes smaller.
+// score 107 (was 107): retail keeps the actor pointer in a stack slot and the prop loop's current index in
+// ebp; ours keeps the actor in ebp and spills the index, so our frame is smaller (both read g_4f55f0). Retail's
+// front is 16 bits (movzx dx from facing, word store, cmp word at the end): `short front` gives exactly that
+// but scores 166 (the index is still spilled and the actor kept in ebx, next_index moving to ebp), so it is
+// left as bool. Tried with short front: index used straight from the iterator, other declaration orders,
+// iterator fields swapped or index copied first, one index variable shared by both loops (166-169); for or
+// while loops over next_index rotate the loop (202, 205).
 // @retail 0x256810
 short __stdcall function_256810(long actor_index, s_slot *slot)
 {

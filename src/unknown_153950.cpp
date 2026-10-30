@@ -404,7 +404,23 @@ void function_154d70(s_speed_request *request, s_speed_slot *slot, real scale)
 	slot->flags |= 1;
 }
 
-// score 60 (was 60): dot/cross product operands, rotation xmm roles and
+// score 59 (was 59): the commutative products of the 2D dot/cross, the up cross's k row and the
+// rotation block take their operands in another order, so the rotation's xmm roles and the final
+// component reloads differ.
+// Tried: norm scalar 67; nested norm tests 64; early 2D cross 207; direction copy loop 271;
+// rotation/scale/both component loops 166/166/166; const bounds input 64; shared scale 64;
+// previous-priority snapshot 280; requested-duration snapshot 271; external bounds reference 67;
+// forward x/y observations 165/163; normalized x observation 81; cosine-complement scalar 64;
+// timer rereads and long update 64; validity result and angle-phase scope 85; forward snapshot 126;
+// normal snapshot 119; entry sine/cosine 64; both draws after normalizing the cross vector 174.
+// Every operand and term order of the 2D dot/cross and of the rotation's dot compiles alike; of the
+// rotation's statement orders (axis components, projection, sine and cosine) the written one is
+// best, j/i/k 63; cosine first worse.
+// Round 177: complete dot2/cross2/initial-normal/projection/rotation-cross/update products
+// Dot/cross operand ranks, rotation XMM roles and final scale reloads remain. Shared
+// axial/normal/tangent contribution vectors, masks 1/2/3/4/5/6/7, scored 105/97/94/63/109/72/92;
+// complete shared affine sum 85. Original helpers and body restored.
+// Earlier: dot/cross product operands, rotation xmm roles and
 // final component reloads still differ; executable tail is three bytes short.
 // Norm scalar 67; nested norm tests 64; early 2D cross 207; direction
 // copy loop 271; rotation/scale/both component loops 166/166/166;
@@ -416,18 +432,23 @@ void function_154d70(s_speed_request *request, s_speed_slot *slot, real scale)
 // Timer rereads and long update 64; validity result and angle-phase scope 85;
 // forward snapshot 126; normal snapshot 119; entry sine/cosine 64;
 // both draws after normalizing the cross vector 174.
-// score 59 (was 64): every operand and term order of the 2D dot/cross and of the rotation's dot
+// Earlier: every operand and term order of the 2D dot/cross and of the rotation's dot
 // compiles alike; of the rotation's statement orders (axis components, projection, sine and
 // cosine) the written one is best, j/i/k 63; cosine first worse.
 // Round 112 (baseline 60): v declared before w 60; existing cross3f_staged for the up cross product 60,
 // vector3f_scale for the final scale 60, dot3f(u, e) / dot3f(e, u) for the projection 60/60 and cross3f
 // for the axis cross 59 (all four kept: they replace hand-written helper bodies); the final scale through
 // &slot->vector 61 (reloads u.j as retail but reschedules the rotation).
-// Earlier: every operand and term order of the 2D dot/cross and of the rotation's dot
 // Round 177: Complete dot2/cross2/initial-normal/projection/rotation-cross/update products
 // 78/78/58/60/60/60; early dot+cross+normal 56; complete rotation and four early/rotation
-// combinations 60 and 56/56/56/56. Normal producer orders ijk/ikj/jik/jki/kij
-// 64/56/64/64/56. Two- and four-point gains rejected; original complete body restored.
+// combinations 60 and 56/56/56/56; normal producer orders ijk/ikj/jik/jki/kij 64/56/64/64/56.
+// Round 112: v declared before w 60; existing cross3f_staged for the up cross product, vector3f_scale
+// for the final scale, dot3f(u, e) / dot3f(e, u) for the projection and cross3f for the axis cross
+// 60/60/60/60/59 (all four kept: they replace hand-written helper bodies); the final scale through
+// &slot->vector 61 (reloads u.j as retail but reschedules the rotation).
+// Round 114: rotation through slot fields at each use 80; axis as a local copy 120; rotation as an
+// inline (vector, axis, sine, cosine) helper 59; axis cross before the projection 66; complement
+// first in the projection 59.
 // @retail 0x154df0
 void function_154df0(long index, s_speed_bounds *bounds, s_speed_slot *slot, vector3f *direction, real priority)
 {

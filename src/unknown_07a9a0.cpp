@@ -212,22 +212,27 @@ void function_07b3e0(void)
 	g_4cf8d8 = data_new_inlined("transport qos attempts", 0x20, 8, 0, g_468758);
 }
 
-// score 58 (was 58): retail keeps the pool in two registers (ebx for the
+// score 39 (was 58): the scan uses the pool's own index search and datum index,
+// so it keeps retail's do-while shape and the hoisted count and bitmap; what
+// is left is the register allocation (retail holds the pool in ebp and the
+// bitmap bit in ebx, ours holds the pool in ebx and copies it to ebp), the
+// loop padding and retail's zero-tail stores.
 // bitmap scan, ebp for the datum address) and aligns the scan loop; ours uses
 // one register and no loop padding (the 11 missing bytes).
+// Kimi lane 2 round 37 also reached 39 by scanning by absolute index with the salted-index helper
+// (pool in EBP rather than EBX/EBP). Its other forms: direct expression 39; copied/independent/const
+// scan pools 39/64/39; counted for scan 121; refreshed pool 39; absolute-datum getter 71; split pools 39.
 // @retail 0x7b430
 void function_07b430(void)
 {
 	if (g_4cf8d4)
 	{
-		s_record_pool_iterator iterator;
+		s_record_pool *pool = g_4cf8d8;
+		long index = NONE;
 
-		iterator.data = g_4cf8d8;
-		iterator.datum_index = NONE;
-		iterator.index = NONE;
-		while (data_iterator_next_inlined(&iterator))
+		while ((index = data_find_index(pool, index + 1)) != NONE)
 		{
-			qos_release(iterator.datum_index);
+			qos_release(data_datum_index(pool, index));
 		}
 		g_4cf8d8->valid = 0;
 		g_4cf8d4 = false;
@@ -1050,7 +1055,8 @@ static inline long ratings_allowed_imbalance(s_surface_description *variant)
 	default: __assume(0);
 	}
 }
-// score 766 (was 766): retail's frame is 0xb4 and it takes the session in EAX and the output pointer
+// score 766 (was 766): Frame 0xd4/0xb4, stacked session and protected opening lookup expansion remain.
+// Earlier: retail's frame is 0xb4 and it takes the session in EAX and the output pointer
 // on the stack, while ours has a 0xd4 frame and takes both on the stack; retail also calls the matched
 // 0x192e60 out of line, ours inlines it.
 // frame 0xd4 versus 0xb4, opening session home and lookup expansion remain; tried byte
@@ -1121,6 +1127,9 @@ static inline long ratings_allowed_imbalance(s_surface_description *variant)
 // Original counter names and declaration lifetimes restored; frame/session/lookup remain.
 // Round 261: explicit initial histogram memset with word/short/long/dword cells
 // 820/820/844/844; each with byte balance argument 871/871/870/870. Original clear and cells restored.
+// Round 414: type-four-first conditional minimum/maximum/spread selectors, each pair
+// and all three 766 each; all with type-five-first limited predicate 803 at 2832/2828.
+// Original selectors, predicates and complete body restored.
 // @retail 0x7e210
 bool function_7e210(c_class_58d20 *session, s_matchmaking_ratings *out)
 {

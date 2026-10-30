@@ -13,7 +13,7 @@ long replication_table_find_in_chains(s_handle_peers *peers, long *handles, long
 void replication_table_release(s_handle_peers *peers, long handle);
 void replication_table_release_chain(s_handle_peers *peers, long count, long const *handles);
 
-// score 132 (was 132): frame 0x48, receiver EBP and pending counter ESI agree; selector,
+// score 55 (was 132): frame 0x48, receiver EBP and pending counter ESI agree; selector,
 // cursor/entry/query homes and load scheduling remain. Earlier 170: the peers table is read through a local; the
 // index is read inside the enabled test, the cursor is declared under the index test, advanced
 // before the stores and the size is one expression, so retail's prologue and output block match.
@@ -154,6 +154,16 @@ void replication_table_release_chain(s_handle_peers *peers, long count, long con
 // is formed after the signed positive-count test. Active endpoints recover cursor,
 // selector and query homes but reverse the two buffers (834/814 bytes). Two native
 // buffer-name orders with each active bound 153/153/153/153. Original restored.
+// Round 182: Callback-argument cursor kept at 55; processed-count and endpoint forms regress; selector and query homes remain
+// Trials 1-8: 55, 55, 216, 229, 208, 208, 101, 171.
+// Trials 9-16: 57, 183, 185, 170, 185, 185, 185, 185.
+// Trials 17-18: 153, 153.
+// Lane 14 r6: the walking active cursor makes the compiler count the active chain down in a
+// stack slot it shares with the pending chain's type spill, so that slot sorts first (more
+// references); retail indexes the active chain (i in esi, count in edi), and its type spill is
+// the last 4-byte slot below the handle arrays. Plain `handles[i]` in the active loop 170 (the
+// pending loop then spills i and keeps type in ebx); type renamed kind/a_type/z_type 55 each;
+// cursor renamed 55.
 // @retail 0x98150
 long c_handle_table_450cd0::v1(long a1, long max_count, void *output)
 {
@@ -224,12 +234,11 @@ long c_handle_table_450cd0::v1(long a1, long max_count, void *output)
 								for (long i = 0; i < handles_count; i++)
 								{
 									real item_priority;
-									table->owner->v9(*active_cursor, a1, &item_priority);
+									table->owner->v9(*active_cursor++, a1, &item_priority);
 									if (item_priority > 0.0f)
 										priority = priority > item_priority ? priority : item_priority;
 									else
 										blocked = true;
-									++active_cursor;
 								}
 								if (blocked)
 									priority = 0.0f;

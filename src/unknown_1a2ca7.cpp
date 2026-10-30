@@ -913,6 +913,13 @@ static inline XUID *message_entry_get_xuid(s_entry *entry)
 // Plain message read 145; that with an if-set exclusion 150; if-set exclusion alone 113; the count
 // renamed result/sender_count/added 81 each; a message pointer stepped at the body's end 157.
 // Shared sender across allocation on cumulative exclusions 135; plain getter 145; literal success 138, plain/literal 150; library copy 135, plain/library 145; readonly/named shared sender 135 each.
+// BLOCKED-BY 0x63d00: our LTCG knows xuid_equal never writes EDX and keeps the exclusion
+// cursor there across the call (sender in EDI); retail reloads `mov edx, edi` each pass and
+// spills the sender, as at all 21 retail calls of 0x63d00 (retail does rely on a preserved
+// EDX for other callees). Taking 0x63d00's address does not change ours. Round 14: stepped
+// message pointer 157; getter through the field at +0 145; ternary getter 145 (VC folds
+// `p ? p : NULL` to p, so only the qualified read keeps retail's test); sender reused for
+// the copy 135.
 // @retail 0x1a4441
 long players_list_add_message_senders(XUID const *excluded, long excluded_count)
 {
@@ -1417,7 +1424,7 @@ void online_presence_get_latest(long task_index, DWORD group_id, DWORD count, XO
 
 /* copies the presence task's results into the friends and team members
    lists */
-// score 117 (was 159): frame agrees; count homes, early count lifetimes and flag reloads differ. Global optimization
+// score 117 (was 117): frame agrees; count homes, early count lifetimes and flag reloads differ. Global optimization
 // off 1206; bounded friend search 230; bounded member search 219; both 211; indexed merge-record pointer
 // 162.
 // Completed friend/member/both flag results 159/218/218; signed friend/member results
@@ -1441,7 +1448,7 @@ void online_presence_get_latest(long task_index, DWORD group_id, DWORD count, XO
 // differ. immutable count snapshots 124; native list record references 124; original count name
 // 124; original count observation order 117; original count names and order 117; row pair without
 // initial merge 219.
-// score 117 (was 117): count homes, early count retention and membership flag reloads remain.
+// count homes, early count retention and membership flag reloads remain.
 // On the recovered comparison carriers: outer/inner/both merge cursors 231/117/231;
 // friend/member/both search cursors 186/219/222; outer-plus-friend 236, inner-plus-member 217.
 // Count homes, early saved-count lifetime and memory flag updates remain. friend field binding 120; member
@@ -1451,14 +1458,22 @@ void online_presence_get_latest(long task_index, DWORD group_id, DWORD count, XO
 // 151/151; existing member-bit/friend-byte/both eligibility 186/117/189; independent
 // merge/friend ordinals 117; immutable count storage 117. Count homes, delayed count loads
 // and memory flag updates still differ.
-// score 117 (was 117): clan count renamed to sort after the friend count 117; friend count read
+// clan count renamed to sort after the friend count 117; friend count read
 // first 124 (its home stays ebp-8, loaded into esi at once); both 124; both counts before the
 // arrays 124; both list-contains helpers declared inline 117. Ours keeps flags20 in a register
 // across those helpers (they write no memory here); retail tests and updates it in memory.
-// score 117 (was 117): friend-side count rename 117; friend-first with that rename 124;
+// friend-side count rename 117; friend-first with that rename 124;
 // retail equality call roles with the rename 159/844; nested friend/member/both membership
 // guards 117/117/117; counts before the user record 117; shared user pointer 117.
 // Count homes, the delayed count load and post-membership flag reloads remain.
+// BLOCKED-BY 0x63d00 (round 14): our LTCG knows xuid_equal never writes EDX and keeps
+// friend/presence pointers there across the calls (`mov esi, edx` after the call); retail
+// recomputes them, as at all 21 retail calls of 0x63d00. The flags20 register across
+// players_list_contains/friends_list_contains is the same gap (retail treats them as
+// writing memory). Separate noinline inline declarations of those two change nothing.
+// Round 14: retail's argument roles in the merge, friend-presence and player-presence calls
+// 159; that plus the friend count first 160; merge and player roles only 164; friend count
+// first 124; loop-scoped merge index 117.
 // @retail 0x1a3dfe
 void friends_lists_update_presence()
 {

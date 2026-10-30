@@ -380,6 +380,11 @@ extern long g_51ec0c;
 // Explicit unsupported-state exit, actual squad predicate and both 80/80/80;
 // leave action from original inputs with neither/either/both boundaries 104 each at 479 bytes;
 // precomputed complete leave expression 147 at 495 bytes.
+// Round 93 (plain checks; --fast builds this one differently): leave code written in both mode arms
+// 104 (479 bytes, merged into the mode-one arm); explicit else around the mode-not-one call 80;
+// squad test merged into the first condition 80; join part after the switch with cases 6-8 and
+// default returning 80 (same layout); the last two mode arms swapped (mode != 3 first) 78 (wrong
+// arm order, aligned worse).
 // @retail 0x2395dc
 void __stdcall function_2395dc(XONLINE_FRIEND *friend_, long controller_index, long mode)
 {
@@ -924,6 +929,9 @@ bool __stdcall function_2399da(long controller_index)
 // library identity copy 90; copy plus those orders 92/95/94; native own-rank value 90.
 // Task result from complete dispatch 139 at 464 bytes; with named removal/rank tests or
 // selected-validity expression in all seven combinations 139 each at 464 bytes.
+// Round 413: selected-identity producer reversed cases 90; if returns/definite result arms
+// 180/180 (frame 0xefc); direct case returns 156. Forceinline forms repeat 90/180/180/156.
+// All six return-form variants lose a matched peer; original shared producer restored.
 // @retail 0x2393ae
 void __stdcall function_2393ae(long controller_index, long rank)
 {

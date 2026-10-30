@@ -163,6 +163,9 @@ void __stdcall cache_copy_record_use(char const *map_name);
 // Round 162: State-arm success results bool/byte/short/long 531/559/627/637; the same declarations
 // first 531/559/627/637. All shrink the aligned frame to 0x108 versus 0x110. Original success
 // lifetime, all state arms and observations restored.
+// Round 38: Native pending request reused by path/copy, conditional value/assignment/const/memcpy
+// and case assignment/memcpy 511 each fast at 1728 bytes; entry assignment/memcpy 507 each
+// at 1732 bytes. Original request flow, descriptor lifetimes and complete body restored.
 // @retail 0x2141f0
 bool function_2141f0(void)
 {

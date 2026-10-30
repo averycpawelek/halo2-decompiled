@@ -367,8 +367,9 @@ struct s_1f8a70_actor
 	byte unknown00[0x4ac];
 	s_1f8a70_frame frame;
 };
+// score 398 (was 398): frame 0x80 agrees; pool/data entry schedule, early false and unit-output/route/result homes differ.
 
-// score 398 (was 398): frame 0x80 agrees; pool/data staging and returned-unit-output/route/result homes differ.
+// Earlier: frame 0x80 agrees; pool/data staging and returned-unit-output/route/result homes differ.
 // Earlier 399 (was 399): Frame 0x80 agrees; pool/data schedule, protected unit-mode boundary and result/route homes remain.
 
 // Earlier 399 (was 399): Frame 0x80 agrees; pool/data ordering, protected unit-mode boundary and result/route homes remain.
@@ -454,16 +455,17 @@ struct s_1f8a70_actor
 // (first +5); data staging and result/route homes remain. All original code restored.
 // Round 239: direct three-route decision chains 210/201/120/102/021/012
 // 417/416/420/398/420/416; 210 with long route/returned unit output 423/414. All restored.
+// Round 412: branch-owned disabled false and ordinary false after unit, bool/byte/short/long 419/427/441/432; after resets 417/425/441/432. Only the pool load moves before allocation; data and result/route homes remain. All original results, calls and phases restored.
 // @retail 0x1f8a70
 bool __stdcall function_1f8a70(long actor_index, long unknown)
 {
-	s_actor_view *actor = actor_get(actor_index);
 	bool result = false;
-	if (actor->unknown267)
+	if (actor_get(actor_index)->unknown267)
 	{
 		function_1f86a0(actor_index);
 		return result;
 	}
+	s_actor_view *actor = actor_get(actor_index);
 	if (*((byte *)actor + 0x480))
 		return true;
 	if (actor->unknown504 == 2 && function_1f3230(actor_index, function_1e3920(actor_index) * 3.0f))
@@ -478,8 +480,9 @@ bool __stdcall function_1f8a70(long actor_index, long unknown)
 	}
 
 	short unit_mode;
-	short route_mode = actor->unknown229 ? 1 : 0;
-	function_e70b0(actor->unknown018, &unit_mode);
+	long unit_index = actor->unknown018;
+	dword route_mode = actor->unknown229 ? 1 : 0;
+	function_e70b0(unit_index, &unit_mode);
 	if (unit_mode == 5)
 	{
 		byte *properties = (byte *)function_1e4990(actor->unknown054);
@@ -507,8 +510,28 @@ bool __stdcall function_1f8a70(long actor_index, long unknown)
 		((s_1f8a70_actor *)actor)->frame.destination_radius = 0.0f;
 		((s_1f8a70_actor *)actor)->frame.destination = ((s_1f8a70_actor *)actor)->frame.target.point;
 		((s_1f8a70_actor *)actor)->frame.destination_node = NONE;
+		break;
+	case 4:
+	{
+		s_262b40_result *target = function_262b40(((s_1f8a70_actor *)actor)->frame.target.reference);
+		if (!target)
+			goto failed;
+		((s_1f8a70_actor *)actor)->frame.destination = *(s_type_c3b527 *)target;
+		((s_1f8a70_actor *)actor)->frame.destination_node = *(long *)((byte *)target + 0x14);
+		((s_1f8a70_actor *)actor)->frame.destination_radius = 0.0f;
+		break;
+	}
+	case 5:
+	{
+		s_262b40_result *target = function_262b40(((s_1f8a70_actor *)actor)->frame.target.reference);
+		if (!target)
+			goto failed;
+		((s_1f8a70_actor *)actor)->frame.destination = *(s_type_c3b527 *)target;
+		((s_1f8a70_actor *)actor)->frame.destination_node = NONE;
+		((s_1f8a70_actor *)actor)->frame.destination_radius = 0.0f;
 		route_mode = 1;
 		break;
+	}
 	case 6:
 	{
 		s_262b40_result *target = function_262b40(((s_1f8a70_actor *)actor)->frame.target.reference);
@@ -546,32 +569,12 @@ bool __stdcall function_1f8a70(long actor_index, long unknown)
 		((s_1f8a70_actor *)actor)->frame.destination_radius = ((s_1f8a70_actor *)actor)->frame.radius;
 		break;
 	}
-	case 4:
-	{
-		s_262b40_result *target = function_262b40(((s_1f8a70_actor *)actor)->frame.target.reference);
-		if (!target)
-			goto failed;
-		((s_1f8a70_actor *)actor)->frame.destination = *(s_type_c3b527 *)target;
-		((s_1f8a70_actor *)actor)->frame.destination_node = *(long *)((byte *)target + 0x14);
-		((s_1f8a70_actor *)actor)->frame.destination_radius = 0.0f;
-		break;
-	}
-	case 5:
-	{
-		s_262b40_result *target = function_262b40(((s_1f8a70_actor *)actor)->frame.target.reference);
-		if (!target)
-			goto failed;
-		((s_1f8a70_actor *)actor)->frame.destination = *(s_type_c3b527 *)target;
-		((s_1f8a70_actor *)actor)->frame.destination_node = NONE;
-		((s_1f8a70_actor *)actor)->frame.destination_radius = 0.0f;
-		route_mode = 1;
-		break;
-	}
 	default:
 		goto failed;
 	}
-	if (route_mode < 0 || route_mode > 2 ||
-		(route_mode == 0 && ((s_1f8a70_actor *)actor)->frame.destination_radius == 0.0f && ((s_1f8a70_actor *)actor)->frame.destination_node == NONE))
+	if (route_mode == 0 && ((s_1f8a70_actor *)actor)->frame.destination_radius == 0.0f && ((s_1f8a70_actor *)actor)->frame.destination_node == NONE)
+		goto failed;
+	if (route_mode < 0 || route_mode > 2)
 		goto failed;
 	switch (route_mode)
 	{
@@ -605,6 +608,7 @@ bool __stdcall function_1f8a70(long actor_index, long unknown)
 		{
 			s_path_source source;
 			s_path_settings settings;
+			result = false;
 			function_1f90f0(actor_index, &source);
 			if (((s_1f8a70_actor *)actor)->frame.root_index != NONE)
 				source.unknown0c = ((s_1f8a70_actor *)actor)->frame.root_index;

@@ -243,9 +243,16 @@ PRIVATE __forceinline real function_112e21(real arg_0)
     return local_0;
 }
 
-// score 133 (was 133): frame 0x80 versus 0x84 and squared/yaw/pitch homes differ;
-// shared normalization scale 133, relative scale 136, both scales 136,
-// reciprocal-root intrinsic 168, two-angle helper precision probe 119 (rejected).
+// score 64 (was 133): the frame, the offset's arithmetic and the direction's registers (i, j, k
+// in xmm3, xmm1, xmm2) now match. Retail clears and stores the direction in i, j, k order (ours
+// j, k, i), and its normalisation scales j and k in place where ours copies the factor first
+// (3 bytes longer), so every later address is shifted. Tried: relative.i = inverse * relative.i
+// with vector3d_from_points3d (133, the compiler commutes it); the offset as a vector3f (71,
+// the j row regrouped as (left.j * y + left.i * x) + left.k * z); the direction as three
+// scalars (105); the clearing in i, j, k order (91, i, j, k land in xmm1, xmm2, xmm3); the
+// normalisation written i = inverse * i, j = j * inverse, k = k * inverse (no change). Tried at
+// 133 (lane): shared normalization scale 133, relative scale 136, both scales 136, reciprocal-root
+// intrinsic 168, two-angle helper precision probe 119 (rejected).
 // @retail 0x112e20
 void function_112e20(transform4x3f *matrix, point3f const *target, transform4x3f const *orientation)
 {
@@ -257,22 +264,28 @@ void function_112e20(transform4x3f *matrix, point3f const *target, transform4x3f
 	vector3f direction;
 	if (frame.scale != 0.0f)
 	{
-		vector3f relative;
-		vector3d_from_points3d(&frame.position, target, &relative);
+		real x = target->x - frame.position.x;
+		real y = target->y - frame.position.y;
+		real z = target->z - frame.position.z;
 		if (frame.scale != 1.0f)
 		{
 			real inverse = 1.0f / frame.scale;
-			relative.i *= inverse;
-			relative.j *= inverse;
-			relative.k *= inverse;
+			x = inverse * x;
+			y = inverse * y;
+			z = inverse * z;
 		}
 		// summed k, j, i as retail does
-		direction.i = frame.forward.k * relative.k + frame.forward.j * relative.j + frame.forward.i * relative.i;
-		direction.j = frame.left.k * relative.k + frame.left.j * relative.j + frame.left.i * relative.i;
-		direction.k = frame.up.k * relative.k + frame.up.j * relative.j + frame.up.i * relative.i;
+		direction.i = frame.forward.k * z + frame.forward.j * y + frame.forward.i * x;
+		direction.j = frame.left.k * z + frame.left.j * y + frame.left.i * x;
+		direction.k = frame.up.k * z + frame.up.j * y + frame.up.i * x;
 	}
 	else
-		direction.i = direction.j = direction.k = 0.0f;
+	{
+		// cleared j, k, i: the order that gives retail's registers
+		direction.j = 0.0f;
+		direction.k = 0.0f;
+		direction.i = 0.0f;
+	}
 	real squared = direction.k * direction.k + direction.j * direction.j + direction.i * direction.i;
 	if (squared != 0.0f)
 	{
@@ -282,19 +295,20 @@ void function_112e20(transform4x3f *matrix, point3f const *target, transform4x3f
 		direction.j *= inverse;
 		direction.k *= inverse;
 	}
-	real yaw = (real)atan2(direction.j, direction.i);
-	// retail keeps the planar length on the x87 stack: fsqrt and fpatan see it unrounded
-	real pitch = (real)atan2((double)direction.k, sqrt((double)direction.j * direction.j + (double)direction.i * direction.i));
-	if (0.0f - yaw_limit > yaw)
-		yaw = 0.0f - yaw_limit;
-	else if (yaw > yaw_limit)
-		yaw = yaw_limit;
-	if (0.0f - pitch_limit > pitch)
-		pitch = 0.0f - pitch_limit;
-	else if (pitch > pitch_limit)
-		pitch = pitch_limit;
+	s_view_angles angles;
+	angles.yaw = (real)atan2(direction.j, direction.i);
+	// the planar length stays on the x87 stack: fsqrt and fpatan see it unrounded
+	angles.pitch = (real)atan2(direction.k, sqrt(direction.j * direction.j + direction.i * direction.i));
+	if (0.0f - yaw_limit > angles.yaw)
+		angles.yaw = 0.0f - yaw_limit;
+	else if (angles.yaw > yaw_limit)
+		angles.yaw = yaw_limit;
+	if (0.0f - pitch_limit > angles.pitch)
+		angles.pitch = 0.0f - pitch_limit;
+	else if (angles.pitch > pitch_limit)
+		angles.pitch = pitch_limit;
 	transform4x3f rotation;
-	function_141ce0(yaw, pitch, 0.0f, &rotation);
+	function_141ce0(angles.yaw, angles.pitch, 0.0f, &rotation);
 	function_142a60(&frame, &rotation, matrix);
 	matrix->scale = scale;
 }
@@ -413,8 +427,21 @@ void function_1d90e0(long render_model_index, long node_index, transform4x3f *no
 // declared first 37; shared exit 37; state pair helper 148; state graph queries 37; mode/graph/
 // class orders 44-110; shifted word expression 37; clear before object chain 191; entry marker
 // workspaces 37; complete workspace boundaries 191; model after clear 191.
+// Round 32 (all 545 bytes unless noted): the existing bit_vector_test 42 (its test is retail's
+// exactly; the set after 0x1d90e0 then becomes load/OR/store instead of retail's `or [eax], edx`);
+// that with a direct `|=` set 42; a written-out mask test with a direct set 42, with
+// bit_vector_set 42; the existing graph_tag_get for the three graph reads 37 (539, back-edge
+// reload order unchanged); bit_vector_test with the second lookup nested 42; with the set through
+// an explicit word pointer 42. A compile-only build gives the opposite set forms, so screen with
+// --fast here.
 // Complete unvisited decision with shift/mask tests and bool/byte/short/long iterator results
 // 55/42/55/42/83/88/81/86; back-edge reload order and later call carriers remain.
+// Round 17: our code is 536 bytes plus 3 of fill. A mask-form test (any spelling) computes the
+// update's mask first and splits its OR into load/OR/store, as the matched 0x29df30 does after its
+// own mask test, so retail's fused `or [word], mask` after a mask test needs another spelling. Tried:
+// bit_vector_test 42; with the update as `visited[i >> 5] |= 1 << (i & 31)` 42; the test written as
+// `(word & mask) == 0` 42; the second lookup in a nested if 37 (same code); the shared graph/iterator
+// setup hoisted with a ternary call 167 (retail duplicates the setup in both arms).
 // @retail 0x113980
 void __stdcall function_113980(long object_index, long target_index, bool alternate, real weight,
 	s_animation_state *state, s_graph_pair_iterator *iterator, long node_count, transform4x3f *nodes)
@@ -1774,6 +1801,9 @@ PRIVATE __forceinline void project_112070(vector3f const *v, vector3f const *for
 // indexed ratio 897; paired ID-end/ratio-end 889/861; paired short/word ordinal 903/903. Original
 // indexed do-loop, all input observations, helpers and complete body restored; frame and first-
 // angle/overlay expansion remain.
+// Staged side cross, overlap-safe direction, both, overlap-safe default angles, side/angles,
+// direction/angles, all, then all with independent secondary projection: 820/842/824/891/847/892/869/882.
+// Original body, complete input capture, helper and includes restored.
 // @retail 0x112070
 void __stdcall function_112070(long unit_index, dword const *node_mask, long node_count,
 	real_quaternion_transform *transforms)
@@ -2775,7 +2805,18 @@ static inline real channel_elapsed_seconds(c_animation_channel const *channel)
     return elapsed;
 }
 
-// score 61 (was 122): frame 0x3c versus 0x38, action/decision and input homes remain.
+// score 52 (was 52): frame 0x3c versus 0x38, action/decision and input homes remain. Measured from
+// the frame top every slot agrees except the action short (ours 4-aligned below the 4-byte slots,
+// retail 2-aligned with the two flag bytes under it) and the control/definition pair; VC7.1 gives a
+// lone 2-byte local, word, char[2], one-short struct or inlined short parameter a 4-aligned slot, so
+// the packing needs a 4-byte aggregate. Round 17: success exit as `*flag = result = true` 52 (kept,
+// retail's AL store and length); control declared before state 61; definition declared last 55; flag
+// initializations before the lookup 206; force flag declared first 52; block-scoped action 52;
+// overlay initialized at its declaration 54. Round 19: the action query in an inline helper owning
+// the short 167 (kept out of line, so the frame is 0x38 but the bytes stay at +2/+3), forceinline 145
+// (0xe70b0 then inlines too), forceinline with 0xe70b0 declared noinline 52 (the inlined short is
+// 4-aligned as well); control renamed so it sorts after definition 52 (slot unchanged); only the force
+// flag initialized before the lookup 206.
 // Returned action comparison plus a separate existing channel-copy statement recover
 // native query/play ordering at retail length; the shared result exit is retained.
 // frame 0x3c versus 0x38; the escaped action short has its own
@@ -2924,8 +2965,7 @@ bool function_10ff40(long unit_index, long type, short side, short value,
             animated = state->play_indexed(animation, side, value, side_out, value_out);
         if (animated)
         {
-            *flag = true;
-            result = true;
+            *flag = result = true;
             goto done;
         }
     }

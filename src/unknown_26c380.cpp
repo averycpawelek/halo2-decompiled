@@ -143,7 +143,7 @@ bool function_26c380(point3f const *origin, s_pathfinding_data const *pathfindin
 	return success;
 }
 
-// score 418 (was 418): frame 0x5c versus 0x64; full/planar normal overlap, pathfinding/NONE roles, memory flags and tails differ.
+// score 404 (was 404): frame 0x5c versus 0x64; full/planar normal overlap, pathfinding/zero roles, byte flags and tails differ.
 // pathfinding pointer in EBP and the -1 edge seed in EDX where ours keeps them in EBX
 // and EDI, and retail keeps a byte local at [esp+0xe] where ours has a long zero at
 // [esp+0x14].
@@ -197,9 +197,12 @@ bool function_26c380(point3f const *origin, s_pathfinding_data const *pathfindin
 // Round 239: actual blocked/admission/both byte fields with long result 418/418/418;
 // with bool result 577/583/577; both char fields with long/bool result 418/577. All restored.
 // Blocked-field forms also move the matched edge helper to 10.
-// score 404 (was 418): the trace result fields are stored in retail's order, the traversal count is an
+// Earlier 404 (was 418): the trace result fields are stored in retail's order, the traversal count is an
 // int, the first flag is a word, the edge direction a byte, and the accepted and blocked paths return
 // their result directly. The frame 0x5c versus 0x64 and the remaining field and register rotations remain.
+// Round 205: complete scalar input reads in cross first/second/both 492/472/482;
+// magnitude alone/with first/with second/with both 400/492/469/482;
+// all with planar input reads 482. Four-point magnitude gain rejected; original producers restored.
 // @retail 0x26c590
 bool function_26c590(s_pathfinding_data const *pathfinding, point3f const *origin, long sector_index,
 	long target_sector_index, vector3f const *direction, real distance, s_path_location const *location,

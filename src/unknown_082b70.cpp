@@ -72,11 +72,11 @@ void function_82b70(long object_index, long *weapons)
 
 long function_c7100(long unit_index);
 
-static __forceinline long object_query_weapon(long unit_index, short slot)
+static __forceinline long object_query_weapon(s_082b70_object *unit, short slot)
 {
 	long result = NONE;
 	if (slot != NONE)
-		result = object_get_082b70(unit_index)->weapons[slot];
+		result = unit->weapons[slot];
 	return result;
 }
 
@@ -114,9 +114,9 @@ void __stdcall function_82c10(long object_index, long *weapons)
 				if (((1 << unit->type) & 3) && unit->driver != NONE && function_c7100(child) == object_index)
 				{
 					if (weapons[0] == NONE)
-						weapons[0] = object_query_weapon(child, object_get_082b70(child)->weapon_slots[0]);
+						weapons[0] = object_query_weapon(object_get_082b70(child), object_get_082b70(child)->weapon_slots[0]);
 					if (weapons[1] == NONE)
-						weapons[1] = object_query_weapon(child, object_get_082b70(child)->weapon_slots[1]);
+						weapons[1] = object_query_weapon(object_get_082b70(child), object_get_082b70(child)->weapon_slots[1]);
 				}
 				child = unit->next;
 			}
@@ -222,7 +222,16 @@ struct s_weapon_definition_view
  byte *barrels;
 };
 
-// score 149 (was 149): frame 0x20 versus 0x1c; retail reloads the object table for the second weapon
+// score 41 (was 41): the unit is looked up again for each slot query, the barrel is kept as a
+// long and clamped without the count guard, so the frame is retail's 0x1c, the length is retail's
+// 634 bytes and the two slot queries reload the object table as retail does; with the trigger
+// state's address formed first in the trigger loop retail advances that cursor first (35, under
+// the keep bar: not kept).
+// Left: retail tests the trigger count twice before the trigger loop (`test eax, eax; jle`,
+// then `xor ebp, ebp` and the loop's own test); with an `if (definition->trigger_count > 0)`
+// guard every register and the trigger loop are retail's (4 left), but a guard that repeats the
+// loop's test is only kept with a match. The four left in that form: the object lookups read
+// [edx + eax + 8] and [ecx + edi + 8] (retail [eax + edx + 8] and [edi + ecx + 8]).
 // slot query (ours shares one lookup), clamps an int barrel with no count guard (in eax/ecx, keeping
 // the result pointer in ebx and the trigger-state cursor in the result parameter's home) and tests
 // the trigger count twice before the trigger loop.
@@ -237,6 +246,15 @@ struct s_weapon_definition_view
 // long barrel with the guard 176; the existing 0xcbd50 for both queries 149 (identical code); long
 // barrel without the guard plus a short hand index 218. Unit pointer local, a pointer to the
 // workspace, scalar results copied in, NONE stores first and a trigger-count guard compile identically.
+// Native trigger value/read-only value, short barrel 185/185; promoted barrel 176/176;
+// definition value with short/long barrel 164/214; both native values 217/207.
+// Trigger value needs frame 0x60; definition value self-aligns and needs 0x2f4. Restored.
+// Lane 14 r6: guard 10; guard + state address first 4; then the lookup through a headers
+// local, `data + index` or a named masked index 4 each; offset-first address arithmetic 4
+// (flips 0x82c10 when written index-first, so the order follows the context, not the
+// expression); the existing 0xcbd50 for both slot queries 180; a trigger-count local 118.
+// Without the guard: headers local 35; named masked index 35; trigger pointer before the state
+// pointer 41; definition declared before its assignment 35; index declared outside the for 35.
 // @retail 0x82d20
 void function_82d20(long object_index, s_object_relevance_source *source, s_weapon_activity_result *result)
 {
@@ -254,8 +272,8 @@ void function_82d20(long object_index, s_object_relevance_source *source, s_weap
  if (object_index == NONE)
   return;
  long weapons[2];
- weapons[0] = object_query_weapon(object_index, object_get_082b70(object_index)->weapon_slots[0]);
- weapons[1] = object_query_weapon(object_index, object_get_082b70(object_index)->weapon_slots[1]);
+ weapons[0] = object_query_weapon(object_get_082b70(object_index), object_get_082b70(object_index)->weapon_slots[0]);
+ weapons[1] = object_query_weapon(object_get_082b70(object_index), object_get_082b70(object_index)->weapon_slots[1]);
  if (weapons[0] == NONE && weapons[1] == NONE)
  {
   function_82b70(object_index, weapons);
@@ -272,8 +290,8 @@ void function_82d20(long object_index, s_object_relevance_source *source, s_weap
    for (long trigger_index = 0; trigger_index < definition->trigger_count; trigger_index++)
    {
     s_weapon_trigger_view *trigger = &definition->triggers[trigger_index];
-    short barrel = trigger->barrel;
-    if (definition->barrel_count > 0 && PIN(barrel, 0, definition->barrel_count - 1) == barrel)
+    long barrel = trigger->barrel;
+    if (PIN(barrel, 0, definition->barrel_count - 1) == barrel)
     {
      byte *state = (byte *)object_get_082b70(weapon_index) + 0x1a4 + barrel * 0x34;
      word flags = *(word *)(state + 4);

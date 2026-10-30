@@ -911,10 +911,18 @@ void function_1d1540(s_havok_component *component);
 // set + body pointer + m_fixed first 88 at 230 (retail's code except the ebx parameter); that with
 // flag5 first 27 at 220 (component in edi, costs 0x1d0c20 and 0x1d1b60); as a member function, every
 // parameter order, body pointer at the top, else arm first, early return, noinline: all as 88.
+// The 88 body is retail's but for the component's stack home (allocated to ebx, loaded from the
+// stack); the getter at each use 88; this function declared ahead of 0x1d1260 88; 0x1d0c20 defined
+// first 88. Without the 0x1d1260 call the component arrives in edi (89); without the 0x1d1540 call
+// it stays on the stack (77): the call to 0x1d1260 with the component live across it decides it.
 // Reset/rebuild inline/noinline contracts, original then aligned-copy/fixed-or-flag-first graphs
 // 81/81/81/81/81/81/81/81/88/88/88/88/27/27/27/27. Original executable source restored. All four 27
 // forms still lose matched 0x1d1b60 at 59 in the reduced image.
 // Both-inline paired form: plain 27 at 220 bytes; matched 0x1d1b60 loses 59; rejected.
+// Round 158: assigned copy + body pointer + m_fixed first 88 at 230 (retail's code; a /Gd first
+// pass loads the component once into ebx, yet it stays a stack argument); same with set() 88; flag5
+// first 27 (component edi); body fetched before the transformed block, either test order, 74 (edi).
+// The edi forms take 0x1d5120 from 77 to 15 but lose 0x1d1b60 (59) and move 0x1d0c20 to 49.
 // @retail 0x1d0cf0
 void havok_component_rigid_body_transform_set(long rigid_body_index, s_havok_component *component, hkTransform const *transform)
 {
@@ -938,7 +946,25 @@ void havok_component_rigid_body_transform_set(long rigid_body_index, s_havok_com
 	}
 }
 
-// score 38 (was 38): Frame and component-in-EBX convention still differ; zero transform/translation/both 64/61/84;
+// score 38 (was 38): BLOCKED-BY 0x1d0cf0: retail passes it the component in ebx (loaded here from
+// the stack after `push ebx`); ours pushes the component and index, so the frame and every store
+// offset differ. Tried here: zero transform/translation/both 64/61/84; rotation workspace/initialized
+// workspace/initialized transform with workspace 78/106/107; position input value 77; rotation input
+// values 143; external matrix/component records 38/38; complete frame set/initialization/library copy
+// 81/71/71; translation memcpy 70; aligned forward/up column values 49/49; defined ahead of 0x1d0cf0
+// 38; native left/all/left-up/forward-left columns 48/69/58/59; SIMD translation/rotation/all/
+// left-plus-translation 38/69/69/48. Through 0x1d0cf0 forms (round 158, not kept): its retail body
+// (assigned copy, body pointer, m_fixed first) 40 (component stays on the stack there); flag5 first
+// 49; body fetched first 49/49. Every form that makes the component a register argument puts it
+// in edi, not ebx, and costs matched 0x1d1b60.
+// only 0x1d0cf0's convention is left (retail passes the component in ebx, so
+// its frame is 0x5c with push ebx). Tried: zero transform/translation/both 64/61/84; rotation
+// workspace/initialized workspace/initialized transform with workspace 78/106/107; position input
+// value 77; rotation input values 143; external matrix/component records 38/38; complete frame
+// set/initialization/library copy 81/71/71; translation memcpy 70; aligned forward/up column values
+// 49/49; defined ahead of 0x1d0cf0 38; 0x1d0cf0's set-copy forms 40/40/49; 0x1d0cf0 with retail's
+// body (component still on the stack) 40; 0x1d0cf0 with the component in edi 49.
+// Frame and component-in-EBX convention still differ; zero transform/translation/both 64/61/84;
 // rotation workspace/initialized workspace/initialized transform with workspace 78/106/107;
 // position input value 77; rotation input values 143. Original body restored.
 // Earlier: frame and component register still differ; external matrix/component records 38/38;
@@ -2633,13 +2659,32 @@ void function_1d83e0(long body_index, s_havok_component *component, long node_a,
 
 
 #include "unknown_1eb550.h"
+#include "vector_products.h"
 
 void function_bba20(long object_index);
 void function_f7ed0(long vehicle_index, vector3f *impulse);
-// score 50 (was 50): Frame 0x30 and length agree; the full image pushes ebx/ebp/esi at entry where
-// retail stages them (the reduced image stages them as retail and leaves 7: the five rigid-body reads
-// address [offset + data] where retail has [data + offset], and the 0x1d1010 call copies the component
-// to ESI before the index to ECX).
+
+/* caps a vector's length at maximum; true when it was longer */
+PRIVATE __forceinline bool velocity_limit_length(vector3f *v, real maximum)
+{
+    real length_squared = v->k * v->k;
+    length_squared += v->j * v->j;
+    length_squared += v->i * v->i;
+    bool limited = length_squared > maximum * maximum;
+    if (limited)
+        scale_vector_by_double(v, maximum / sqrt(length_squared), v);
+    return limited;
+}
+
+// score 7 (was 50): the saves are staged as retail's; the five rigid-body reads address
+// [offset + data] where retail has [data + offset], and the 0x1d1010 call copies the component to ESI
+// before the index to ECX. The entry saves came from this function's own double-typed scale: with a
+// named double here, any image holding 0x2056e0's double cap or unknown_0350e0.cpp pins the saves at
+// entry. Round 17: both caps through the existing scale_vector_by_double 50; real scales 77 (folds the
+// last multiply); quotient per component 77; the two-caller cap helper with the quotient as
+// scale_vector_by_double's argument 7 (kept), with a named double scale 50; operator[] reads at the
+// first two sites 7; negated change product 7; existing keyframed helper at both/the last test 151/29.
+// Earlier rounds (the full image then pushed ebx/ebp/esi at entry):
 // Earlier: Frame 0x30 agrees; admission save staging and paired fixed/zero velocity homes remain.
 // staggered register saves and paired velocity homes differ;
 // marked linear/angular/both getters 200/197/274; earlier angular norm 146; keyframe query 167 (fast base 135).
@@ -2742,28 +2787,10 @@ void function_1ced00(s_havok_component *component)
             {
                 vector3f linear, angular;
                 rigid_body_velocities_get(havok_component_rigid_body_get(i, component), &linear, &angular);
-                real speed_squared = linear.k * linear.k;
-                speed_squared += linear.j * linear.j;
-                speed_squared += linear.i * linear.i;
-                if (speed_squared > 10000.0f)
-                {
-                    double scale = 100.0f / sqrt(speed_squared);
-                    linear.i = (real)(linear.i * scale);
-                    linear.j = (real)(linear.j * scale);
-                    linear.k = (real)(linear.k * scale);
+                if (velocity_limit_length(&linear, 100.0f))
                     havok_component_rigid_body_linear_velocity_set(i, component, &linear);
-                }
-                real angular_squared = angular.k * angular.k;
-                angular_squared += angular.j * angular.j;
-                angular_squared += angular.i * angular.i;
-                if (angular_squared > 2500.0f)
-                {
-                    double scale = 50.0f / sqrt(angular_squared);
-                    angular.i = (real)(angular.i * scale);
-                    angular.j = (real)(angular.j * scale);
-                    angular.k = (real)(angular.k * scale);
+                if (velocity_limit_length(&angular, 50.0f))
                     havok_component_rigid_body_angular_velocity_set(i, component, &angular);
-                }
             }
             havok_component_rigid_body_state_update(i, component);
             if (havok_component_rigid_body_get(i, component)->body_is_simulating().m_bool &&

@@ -158,7 +158,20 @@ PRIVATE __forceinline void function_248076(dword *arg_0, real &arg_1)
 // Round 402 on the expanded-lookup graph: declared cache-record type, direct four
 // random returns, both, combined initial flags, flags/type and flags/direct draws
 // 70 each; declared type with retail timestamp order 133, with all three forms 133.
+// Round 6: field_10 stored after the field_14/field_16/field_18 samples 184/168/152; field_50
+// read into a named pointer before the compare 70; retail order with the compare operands
+// swapped 133.
 // All restored; timestamp/sample order and later scratch registers remain.
+// Round 113: named seed pointer for the five draws 88 (863 bytes), with field_10 first 166; field_10
+// first alone 133 (aligned 19 against 39: only the split compare and the child-loop registers differ);
+// field_10 first with the compare as a bool local 133 (still split); compare operands swapped 71;
+// count increment before the timestamp store 71. All restored.
+// With field_10 last its unknown04 temporary takes ECX (the seed pointer is dead by then; retail's
+// takes EDX while the seed pointer is live), which starts the scratch rotation after the compare.
+// Retail's fold after an fstp occurs at only one other site (0x39a80); no matched function has
+// either form. Count incremented before the field_3c store 71; short child index 76; with
+// field_10 first 137; sample drawn into a local before the field_10 store 146; field_10 stored
+// after field_08 200.
 // @retail 0x247fd0
 void function_247fd0(s_247fd3 *arg_1, s_particle_system_datum *arg_2,
 	point3f const *arg_3, vector3f const *arg_4, dword arg_5, s_247fd0 *arg_0)

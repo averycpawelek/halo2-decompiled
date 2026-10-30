@@ -334,7 +334,8 @@ void looping_sound_controllers_synchronize(bool initial_playback)
 
 void function_11bed0(s_location *location, point3f const *point);
 
-// score 93 (was 93): native iterator keeps the initial called scan and subsequent inline scan; location lookup still expands.
+// score 93 (was 93): Called location-query boundary and native datum/element homes remain; restore the complete opening executable body.
+// Earlier: native iterator keeps the initial called scan and subsequent inline scan; location lookup still expands.
 // Published pool per use 161; shared bitmap scan 161; plain for 161; reused absolute slot 161;
 // shared next-datum advance 116; source receiver 160; bool datum iterator 134 (fast). Native iterator 93 fast/plain.
 // Native iterator aggregate 93; datum-index receiver 83 (one-use call-result pointer; unmatched, restored);
@@ -353,6 +354,8 @@ void function_11bed0(s_location *location, point3f const *point);
 // or location workspace 93/99/118. Restored.
 // Complete spatial/source/sound snapshots by assignment or memcpy 165/165/188/188/187/187; Boolean iterator
 // plus spatial/source snapshot 121/139. Restored.
+// Round 191: Point-only assignment/CRT/setter copies at eligibility scope 140/140/142; at loop scope 140/140/142.
+// Round 191: Point-only assignment/CRT copies with a separate complete location output 159/159. No exact match; every single-use point copy restored.
 // @retail 0x21a100
 void looping_sound_update_locations(void)
 {
@@ -963,7 +966,12 @@ short function_219110(s_set_ref *ref, short offset, dword *used_mask, short prev
 void sound_playback_set_chunk(long sound_index, long definition_index, char pitch_range_index, char permutation_index, short chunk_index);
 long __stdcall function_125e60(s_looping_track_sound *sound);
 
-// score 77 (was 132): a mask test read as a field bit (TEST_FIELD_BIT) gives retail's load-and-shift; the rest still differs.
+// score 77 (was 77): Float/result/random spill homes and initialization scheduling differ.
+// Earlier field-bit mask form 77 (from 132).
+// Float/result/random homes and initialization scheduling remain. Entry result 71; available-mask name 77;
+// entry mask workspace 77; table reads at use 77; full-width track slot 231; playback record name 77; direct
+// distance expression 194; entry result with full-width slot 231. All restored; six-count result gain below
+// threshold.
 // @retail 0x21b940
 long function_21b940(long looping_sound_index, long definition_index, long pitch_range_index, short track_index, short state, dword *seed)
 {
@@ -1213,6 +1221,10 @@ struct s_looping_detail_request
 // Round 186: caller-only query noinline/inline 138/138; mode predicate 138;
 // destination after copy/reference 138/138; offset workspace name 138;
 // caller noinline with later destination 138; mode with later destination 138.
+// Round 77: a noinline first-player query plus a header copy for its three inlining callers matched,
+// but DECOMPILING.md rules out added noinline, so it was reverted; mode before type, audible stores in
+// struct order, vector3f_add for the position and the camera taken first in the else arm 133 (under the
+// keep bar, restored).
 // @retail 0x21cc60
 bool looping_sound_prepare_detail(s_type_a82d9f const *detail, long looping_sound_index, s_looping_detail_request *request)
 {
@@ -1348,12 +1360,22 @@ static inline dword looping_sound_take_permutations(s_type_5ef569 *sound, loopin
 	return function_2194c0((s_packed_value *)&g_51ebd4->sets[playback->pitch_range_base + arg_58ecd0], (s_animation_ref *)playback);
 }
 
-// score 166 (was 166): native short previous permutation removes extension traffic; tag/mask/range homes and entry scheduling remain.
+// score 137 (was 137): The 0x5c versus 0x60 frame, tag/mask/range homes and entry scheduling remain; restore the opening separate-return body.
+// Earlier: frame 0x5c versus 0x60; tag/mask/range homes and entry scheduling remain.
+// Native short previous permutation removes extension traffic; separate success return 137 fast/plain.
 // Result first 176; tag per use 236; tag/range/mask names 176; outputs declared first 176;
 // counts at entry 176; reasons before span selection 176; native selected voice group 188. Short previous 166 fast/plain.
 // Round 180: Existing shared get/previous/set helper calls, seven nonempty subsets
 // 215/199/245/224/282/269/315; native short previous result in if/else arms 166. Original call
 // expansion, all values and full body restored; tag/mask/range homes and entry scheduling remain.
+// Round 189: direct offset/track/both 166/166/166; update receiver at each use 187; char/short/long result
+// 172/159/160.
+// Short result with offset/track/both 159 each; separate success return 137 fast/plain kept.
+// On 137, long previous/range/permutation/all 166/152/177/165, restored.
+// Separate success return preserves every call and state store; frame 0x5c versus 0x60, tag/mask/range homes remain.
+// Round 189 cleanup: direct false default 137 fast/plain; no constant result local retained.
+// Round 191: Actual channel/count/stop admission result in bool/byte/short/long 146/147/160/156; the same graph with native tag/mask/range lexical names 146/147/160/156.
+// Round 191: All result carriers and scalar-home names restored.
 // @retail 0x21c190
 bool function_21c190(s_type_5ef569 *sound, s_type_06b94f *track, long sound_index, dword *seed)
 {
@@ -1364,7 +1386,6 @@ bool function_21c190(s_type_5ef569 *sound, s_type_06b94f *track, long sound_inde
 	long definition_index = *(long *)((byte *)track_definition + offset + 4);
 	s_looping_playback_definition *playback = (s_looping_playback_definition *)g_4e3b44[definition_index & 0xffff].bytes;
 	playing->transition_pending = true;
-	bool result = false;
 	short arg_58ecd0 = function_218f50(playback, playing->pitch_range_index, playing->pitch);
 
 	/* Retail expands the permutation helpers here, but calls them from
@@ -1417,16 +1438,17 @@ bool function_21c190(s_type_5ef569 *sound, s_type_06b94f *track, long sound_inde
 			if (stopped_sound != NONE)
 			{
 				function_127320(stopped_sound, reason);
-				result = stopped_sound == sound_index;
+				track->field_c_4 = track->next_state;
+				return stopped_sound == sound_index;
 			}
 		}
 	}
 	track->field_c_4 = track->next_state;
-	return result;
+	return false;
 }
 
 long function_125f70(long definition_index, s_looping_detail_request *request, long *reason);
-// score 457 (was 501): frame 0x124 versus 0x128; definition, index and ring homes still differ.
+// score 457 (was 457): frame 0x11c versus 0x128; definition, index and ring homes still differ.
 
 // Earlier: frame 0x128 matched with the stop helper out of line;
 // index homes, definition register and ring traversal still differ.
@@ -1445,6 +1467,10 @@ long function_125f70(long definition_index, s_looping_detail_request *request, l
 // native outer iterator 514. On bounds: indexed/selection/both 373/476/469; pools/indexed+pool/selection+pool/all 369/358/474/460.
 // On 457, activity Boolean/previous byte/range-word subsets 476/481/398/494/527/492/527; long previous with both 536.
 // Width and producer tails restored; original calls, selected type and arithmetic grouping retained.
+// Round 189: Full control 457, reduced control 358. tag at each use 533f; playback at each use 494f; direct
+// track definition 478f; class at each use 476f; tag and class 537f; ring for 358f; header memset 457f; all tags
+// with ring for 566f.
+// Original body retained; frame 0x11c versus 0x128 and index/tag/ring homes remain. No reduced-only gain selected.
 // @retail 0x21b0e0
 void function_21b0e0(bool update)
 {
@@ -1758,7 +1784,7 @@ void function_12a1b0(short voice_index, s_looping_track_sound *sound, s_looping_
 void function_21f8a0(long channel_index, s_looping_channel_properties const *properties, s_looping_effect_playback const *effects);
 void __stdcall function_21f720(s_looping_impulse_parameters const *parameters);
 void function_21fa80(long channel_index, s_looping_channel_properties const *properties, s_looping_effect_playback const *effects, bool force);
-// score 414 (was 447): frame 0x4b4 versus 0x4bc; initial scalar homes and class-query expansion remain.
+// score 414 (was 414): frame 0x4b4 versus 0x4bc; initial scalar homes and class-query expansion remain.
 
 // Earlier: frame 0x4b4 versus 0x4bc, entry snapshots and the class lookup expansion still differ.
 // frame 0x4b4 versus 0x4bc, entry snapshots and the class lookup expansion still differ.
@@ -1780,6 +1806,10 @@ void function_21fa80(long channel_index, s_looping_channel_properties const *pro
 // each with long count 414, all with short count 467. On 414, short selection/wide chunk/both 481/457/490;
 // direct controller observations alone/with selection/with chunk/with both 663/680/663/691.
 // The existing count snapshot remains before decrement; all extra producer, receiver and width forms restored.
+// Round 189: base flag clear 527; effect flag clear 523; both flag clears 534; inner gain carrier 414; post-
+// decrement count 414; headers plus gain 534; headers plus count 534; all producers 534; consumer-owned pitch
+// 498; controller property arms 414; pitch plus property arms 498.
+// Original body retained; frame 0x4b4 versus 0x4bc, initial scalar homes and class-query expansion remain.
 // @retail 0x21c400
 void function_21c400(short voice_index, real gain, s_looping_channel_spatialization const *spatialization)
 {

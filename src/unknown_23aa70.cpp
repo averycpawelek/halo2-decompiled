@@ -198,36 +198,47 @@ PRIVATE __forceinline void vertex_decode_23ac30(short x, short y, short z,
 // node/packed/both record references 62/62/62; native coordinate loop 62; native range and
 // coordinate loops 62; format-3 sum written offset first 62; formats 3 and 4 indexed 175;
 // format-4 pointer for the coordinates with the node read by index 175; the index read once
-// into a local for every case with format 4 indexed 175.
+// into a local for every case with format 4 indexed 175; indexed format 4 with node declared
+// before point (definition, declaration and call) 175; node before point alone 62 (caller +2);
+// formats 2, 3 and 4 all indexed 175; format-4 record as a packed position member plus node,
+// indexed/pointer 175/62.
+// into a local for every case with format 4 indexed 175; with format 4 indexed, the format read into a
+// local 175, one node store after the switch 187, the index read directly 175 (the source still arrives
+// on the stack, the switch index in EDI, the node in EBX); the buffer pointer read at each use 190;
+// the index read through its own address (index_reference) dropped 62 (index stays on the stack: kept);
+// format 3 indexed 60 (retail's format-3 code exactly, EBX for the offset); a shared node store after
+// the switch with formats 3/4 returning 172, with format 4 indexed 175. One-file LTCG harness: only the
+// format-4 form decides the convention (removing any other case never flips it); format 4 keeps
+// retail's EDI node and EDX source only when its node read re-derives the buffer base (the full base
+// expression at each access, or the node read through it) instead of keeping base and index live.
 // @retail 0x23ac30
 void function_23ac30(s_vertex_source_23ac30 const *source, long index,
 	s_vertex_bounds_23ac30 const *bounds, point3f *point, long *node)
 {
-	long const *index_reference = &index;
 	s_vertex_buffer_23ac30 const *buffer = source->buffer;
 	switch (buffer->format)
 	{
 	case 1:
-		*point = ((point3f const *)(buffer->data + buffer->offset))[*index_reference];
+		*point = ((point3f const *)(buffer->data + buffer->offset))[index];
 		if (node) *node = 0;
 		break;
 	case 2:
 		{
-			s_packed_vertex_23ac30 const *vertex = ((s_packed_vertex_23ac30 const *)(buffer->data + buffer->offset)) + *index_reference;
+			s_packed_vertex_23ac30 const *vertex = ((s_packed_vertex_23ac30 const *)(buffer->data + buffer->offset)) + index;
 			vertex_decode_23ac30(vertex->x, vertex->y, vertex->z, bounds, point);
 			if (node) *node = 0;
 		}
 		break;
 	case 3:
 		{
-			s_vertex_with_node_23ac30 const *vertex = ((s_vertex_with_node_23ac30 const *)(buffer->data + buffer->offset)) + *index_reference;
+			s_vertex_with_node_23ac30 const *vertex = ((s_vertex_with_node_23ac30 const *)(buffer->data + buffer->offset)) + index;
 			*point = vertex->position;
 			if (node) *node = vertex->node;
 		}
 		break;
 	case 4:
 		{
-			s_packed_vertex_with_node_23ac30 const *vertex = ((s_packed_vertex_with_node_23ac30 const *)(buffer->data + buffer->offset)) + *index_reference;
+			s_packed_vertex_with_node_23ac30 const *vertex = ((s_packed_vertex_with_node_23ac30 const *)(buffer->data + buffer->offset)) + index;
 			vertex_decode_23ac30(vertex->x, vertex->y, vertex->z, bounds, point);
 			if (node) *node = vertex->node;
 		}

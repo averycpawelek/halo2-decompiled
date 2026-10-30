@@ -460,6 +460,10 @@ void function_3dd10(long object_index, bool force);
 // unroll comes from the float weight sum and survives every counter, bound and accumulator
 // spelling), blend's stack slot, the inverse subtraction (retail's is in the blend block, with 1.0
 // reloaded at the not-found exit) and the 1.0/0.0 load order.
+// Round 54: moving the inverse into the found branch gives retail's 1.0/0.0 load order and the
+// found-path subtraction (132f), but our not-found exit then rejoins the block's 1.0 load instead
+// of reloading it, so the tail sits 8 bytes short of retail's and every later branch target
+// shifts; a while-loop second scan adds an entry guard (196f, 1045 bytes). Original restored.
 // Round 53: the inverse at the top of the found block gives retail's blend slot, subtraction and
 // 1.0/0.0 order but loses the 1.0 reload at the not-found exit (one instruction short) 132f; with
 // the variant byte read before the blend value 123f, read at its uses 134f; with a pre-incremented

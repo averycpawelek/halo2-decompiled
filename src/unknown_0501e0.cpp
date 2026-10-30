@@ -144,6 +144,9 @@ static __forceinline void world_vector_to_view(real arg_0, vector3f const *arg_1
 // DL175: Helper axis homes, displacement/view homes and early uninitialized tail scratch in seven
 // subsets [221, 221, 221, 221, 221, 221, 221]; helper horizontal/vertical/depth homes 221. Original
 // helper and body restored.
+// Round 205: scale-output-input and output-scale-input helper orders, each
+// void/returned-output/output-reference/both-reference contracts, all eight 221.
+// All existing helper formals and both real calls restored; extra frame dword remains.
 // @retail 0x501e0
 void function_501e0(s_501e0 const *arg_0, bool arg_1, s_501e0 *arg_2)
 {

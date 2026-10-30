@@ -848,7 +848,7 @@ void __stdcall function_b9b90(long object_index, bool disable);
 void function_b7360(long object_index);
 bool function_e4680(long arg_159e6d);
 bool havok_component_any_rigid_body_active(s_havok_component *component);
-void function_1e5a60(s_biped_physics_result *result, s_biped_physics_input const *input, void *physics);
+void function_1e5a60(void *physics, s_biped_physics_result *result, s_biped_physics_input const *input);
 bool havok_component_unknown10_recent(s_havok_component const *component);
 void function_e4330(long arg_159e6d, real height);
 real function_1201a0(vector3f *v, vector3f const *fallback);
@@ -935,7 +935,7 @@ void __stdcall function_dd990(long arg_159e6d)
 				long contact;
 
 				function_dd0d0(arg_159e6d, &input, physics);
-				function_1e5a60(&result, &input, &biped->physics_mode);
+				function_1e5a60(&biped->physics_mode, &result, &input);
 				contact = result.contact_index;
 				if (!(*((byte *)biped + 0xc1) & 1) && contact != NONE &&
 					contact == PIN(contact, 0, component->unknown88.size))

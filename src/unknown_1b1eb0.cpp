@@ -65,27 +65,53 @@ short __stdcall function_1b1f30(long actor_index, s_slot *slot, bool active)
 	return result;
 }
 
-// score 32 (was 32): node-pool/state-two register reuse and four-byte extent excess remain.
-// Paired mode result short/long 62/63; flags before paired state short/long 81/82;
-// guarded mode result short/long 46/45; view rejection first 32; conditional view acceptance 32.
-// node-pool base uses EDI instead of retail ESI, which
-// retail reuses for state two; four-byte extent gap. State/mode destination
-// pointers 32/32; both destinations 32; default flag destinations 33; readonly
-// view 32; readonly view with state/mode/both destinations 32/32/32.
-// +0x29 default target moves with the four-byte length gap;
-// retail reuses ESI for the node base and constant 2, ours uses EDI and immediates.
-// Earlier separate exits 28/233; node reference, paired stores, reversed paths
-// and nested view forms tied; unsigned range 55/231. Ordinary trials: short
-// classification 32; long classification 31/231 (below keep threshold); equality
-// cases 106/183; test-derived state 32; assigned state 32; short classification
-// with shared default stores 49/217; state with common exit 32; primary-state
-// store first with short classification 32. Opening executable body restored.
-// score 32 (was 32): node-base EDI versus retail ESI/shared two still differs; node, actor, view and combined receiver names 32; early node declaration and renamed early node 32; complete native node type 32; native node with open classification bounds 39.
-// node-base/constant register ownership and extent still differ; index/direct pointer lookup 109/32; shared handle 109/42; entry-scope view with index/native lookup 109/32; entry view and shared handle 109/42 (all plain).
-// score 32 (was 32): a compile-only harness hoists 2 into ESI (retail's form) only with a fifth use of short 2; first test `>= 2` gives retail's tail but `cmp si; jl` 33; early-exit default 32; sibling then-arm store order 32; range bounds swapped 33; prop index local 42; 384 store-order/nesting/polarity forms in the harness never hoist it.
-// score 32 (was 32): force-inline node getter/view/both 32/32/32; two-use classification
-// pointer 32; const actor/node/both 32/32/32; const receivers with the classification
-// pointer 32. Node-base/shared-two ownership and the four-byte extent excess remain.
+// score 32 (was 32): retail keeps 1 in EBX and reuses ESI, after the node-pool base, for the
+// constant 2, so the view pool's base folds into `add eax, [edx+0x44]`; ours uses EDI for both pool
+// bases and immediate 2s (four-byte extent excess, +0x29 default target). A compile-only screen with
+// the view lookup inlined reproduces ours exactly: once 2 sits in a callee-saved register the view
+// base folds, so the two differences are one.
+// Tried: paired mode result short/long 62/63; flags before paired state short/long 81/82; guarded
+// mode result short/long 46/45; view rejection first 32; conditional view acceptance 32; state/mode
+// destination pointers 32/32; both destinations 32; default flag destinations 33; readonly view 32;
+// readonly view with state/mode/both destinations 32/32/32; separate exits 28/233; node reference,
+// paired stores, reversed paths and nested view forms tied; unsigned range 55/231; short
+// classification 32; long classification 31/231; equality cases 106/183; test-derived state 32;
+// assigned state 32; short classification with shared default stores 49/217; state with common exit
+// 32; primary-state store first with short classification 32; node, actor, view and combined
+// receiver names 32; early node declaration and renamed early node 32; complete native node type 32;
+// native node with open classification bounds 39; index/direct pointer lookup 109/32; shared handle
+// 109/42; entry-scope view with index/native lookup 109/32; entry view and shared handle 109/42;
+// first test `>= 2` 33 (2 hoisted to entry); early-exit default 32; sibling then-arm store order 32;
+// range bounds swapped 33; prop index local 42; force-inline node getter/view/both 32/32/32; two-use
+// classification pointer 32; const actor/node/both 32/32/32; const receivers with the
+// classification pointer 32; one shared flag tail 49; view test nested 32; view-arm stores
+// reversed 32; then-arm flag store first 32; open bounds with one shared flag tail 51. In the screen
+// no range spelling, tail sharing, nesting or store order puts 2 in ESI.
+// retail keeps 1 in EBX from the first test and, after the node lookup, uses ESI for
+// the node pool base and then for the constant 2 (four uses: the `<= 2` test and three word stores);
+// ours uses EDI for both pool bases, leaves the view pool load unfolded and stores immediate 2s; four
+// bytes long. The fast check needs 0x25d740 in the image (106 without it). A compile-only harness hoists
+// 2 into ESI only with a fifth use of short 2 (384 store-order/nesting/polarity forms never did). Tried:
+// paired mode result short/long 62/63; flags before paired state short/long 81/82; guarded mode result
+// short/long 46/45; view rejection first 32; conditional view acceptance 32; state/mode destination
+// pointers 32/32; both destinations 32; default flag destinations 33; readonly view 32 (with
+// state/mode/both destinations 32/32/32); separate exits 28/233; node reference, paired stores, reversed
+// paths and nested view forms tied; unsigned range 55/231; short classification 32; long classification
+// 31/231; equality cases 106/183; test-derived state 32; assigned state 32; short classification with
+// shared default stores 49/217; state with common exit 32; primary-state store first 32; node, actor,
+// view and combined receiver names 32; early node declaration and renamed early node 32; complete native
+// node type 32; native node with open classification bounds 39; index/direct pointer lookup 109/32;
+// shared handle 109/42; entry-scope view with index/native lookup 109/32; entry view and shared handle
+// 109/42; first test `>= 2` 33 (235 bytes: retail's tail exactly, but 2 is hoisted into ESI from entry
+// and compared there); early-exit default 32; sibling then-arm store order 32; range bounds swapped 33;
+// prop index local 42; force-inline node getter/view/both 32/32/32; two-use classification pointer 32;
+// const actor/node/both 32/32/32; const receivers with the classification pointer 32; view-arm stores
+// chained (`a = b = 2`) 32; `== 1 || == 2` range 106 (183 bytes: the view lookup is no longer inlined);
+// `> 0 && < 3` 39; one if/else structure without the early return 32; a dead `unknown41c = 2` or second
+// `unknown420 = 2` in the first arm 32 (removed before the constant is counted); flag pairs chained
+// (`a = b = true`) 36; first test `>= 2` with `> 0` 36 (2 hoisted from entry, 1 no longer hoisted:
+// five byte stores alone do not hoist it); the range test inverted with the view in its arm 32; view-arm
+// stores swapped 32; `> 0` for the lower bound alone 33.
 // @retail 0x1b21f0
 void __stdcall function_1b21f0(long actor_index, s_slot *slot)
 {

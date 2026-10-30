@@ -199,6 +199,10 @@ public:
 // Round 274: Native shared signed count field with independent child-count declaration,
 // bounded short viewer and indexed child-field subsets 227/227/259/259/243/243/264/264.
 // Original shared header and complete body restored; frame and metadata/head homes remain.
+// Round 411: Existing allocator inline/noinline/combined/forceinline declaration contracts,
+// each with original/early child-counter declaration, 240/240/227/227/240/240/463/463.
+// The frame remains 0x10; forced allocation expands to 917 bytes. Original counter,
+// complete body and both allocator declarations restored; metadata/head and x87 homes remain.
 // @retail 0x248970
 void function_248970(s_particle_location_datum *arg_0, bool arg_5, real arg_1, s_particle_system_datum *arg_2,
 	real *arg_3, transform4x3f const *arg_4)

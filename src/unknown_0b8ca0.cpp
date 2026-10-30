@@ -630,7 +630,9 @@ static __forceinline long object_query_next_ab(s_record_pool *data, long index)
     return (*(short *)(data->data + data->size * absolute) << 16) | absolute;
 }
 
-// score 231 (was 231): Caller-dependent alignment and scalar/angle homes remain.
+// score 231 (was 231): retail self-aligns its frame (`and esp, -8`, esp-relative locals,
+// bool result byte) while ours keeps EBP for the global base and a dword result; retail's
+// x87 block computes atan2(radius, magnitude) (swapping ours scores 230).
 // Round 89: the reduced image self-aligns like retail, so trials were measured there (baseline 247)
 // and confirmed plain: the existing function_baf80 for the root walk 280 (stays out of line; retail
 // calls it out of line from 48 other functions, so this loop is its own); the table read inside the
@@ -1732,6 +1734,9 @@ transform4x3f *function_b8bd0(long object_index, short node_index);
 // Round 191: complete entry/ancestry and accepted-refresh table graphs, reused byte/native
 // receivers 321/329, separate byte/native phase tables 304/328; with the physical slot
 // instead of the byte offset 320/320/303/303. All regress; original table reads restored.
+// Round 270 M: ordinary saved activity on the retained node-query graph, alone/with
+// ordinary index/ordinary node/both 289/314/289/317; the same four with the actual
+// header activity member 289/314/289/317. Original qualifiers, header and body restored.
 // @retail 0xb93b0
 void __stdcall function_b93b0(long parent_index, volatile long index, volatile short node)
 {

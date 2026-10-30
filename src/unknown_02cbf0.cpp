@@ -49,14 +49,48 @@ static __forceinline long floor_to_long_inline(real value)
 	}
 }
 
-// score 80 (was 80): packed-word load order, intensity spill and final word home.
+// score 36 (was 46): the bit-6 test is retail's `test al, 0x40` again (the field-bit form only
+// shifted the listing, 46 at 1036 bytes) and the loader's two flags are named before the call, so
+// the load test is set first as in retail. Left: retail ORs the incoming flags and category before
+// the kept top bits; the scaled intensity spills to `outside`'s home (ours `level`'s); retail keeps
+// the new kind word in esi, takes the instance bit from a copy and stores the word just before the
+// 0x449e0 call (ours stores it at once and spills instance_bit to `mode`'s home); retail sets
+// edx to the state before the bit-count test.
+// Tried: separate allocation increment, entry reference, position memcpy and early group-pointer
+// scope 80; object-tag result first 97; object-index guard first 175; separate inline floor
+// results 80; missing-geometry guard first 276; flags-first or-chain, two-statement split and
+// &=/|= split 80 (reassociated); named word local in the call, named bools before the store, kind
+// term first, dword kind 80; separate call-value copy for the out-of-line floor 80; all eight
+// ordinary/inline/separate-noinline section/kind declaration pairs 46. On the mask test: kind term
+// first 80; packed-word local in either order 80; load named before the kind store 81; kind call
+// inside the store 80; &=/|= kind split 80; shifted dword kind 80; instance bit read before the
+// store 89; old word copied to a local 91; only the instance named 38; only the load named 79;
+// instance named first 39; both named with the field-bit test 73; flags-last and category-first
+// word-one or-chains 46 (reassociated); a bitfield view for the kind store (diagnostic) 80.
+// packed-word load order, intensity spill and final word home.
+// packed-word load order (ours reads the old word first), the intensity
+// packed-word load order (ours reads the old word first), the intensity
+// spill (ours in level's dead slot, retail in outside's: retail's callers push level as a
+// word, BLOCKED-BY 0x133390 and 0x133520, whose file holds the byte declaration) and the new kind word
+// (retail builds it in esi and stores it after the push). The field-bit test of bit 6 is
+// not retail's code (retail: test al, 0x40); `& 0x40` gives it at 80 (1033 bytes), but the
+// kind-word block is then two instructions short and the tail shifts.
+// packed-word load order, intensity spill and final word home.
 // Separate allocation increment, entry reference, position memcpy and early
 // group-pointer scope 80; object-tag result first 97; object-index guard first
 // 175; separate inline floor results 80; missing-geometry guard first 276.
 // Flags-first or-chain, two-statement split and &=/|= split 80 (reassociated);
 // named word local in the call, named bools before the store, kind term first,
 // dword kind 80; separate call-value copy for the out-of-line floor 80.
-// score 46 (was 80): a mask test read as a field bit (TEST_FIELD_BIT) gives retail's load-and-shift; the rest still differs.
+// Earlier: a mask test read as a field bit (TEST_FIELD_BIT) gives retail's load-and-shift; the rest still differs.
+// Round 409: All eight ordinary/inline/separate-noinline section/kind declaration pairs 46 (1036/1033); no gain. Original contracts restored. Retained-word load order, intensity slot, final word carrier and shifted flag test remain.
+// Grouped new fields (either order), old word last, kind word split or with a
+// named shifted kind, dword kind result, `!= 0` bit argument: identical code;
+// bitfield view of the word (kind only / all fields) 80/84 on the `& 0x40` form;
+// word and both bools before the store 46; old word read through the global
+// array in the first/kind word 47/57.
+// Earlier: a mask test read as a field bit (TEST_FIELD_BIT) gives retail's load-and-shift; the rest still differs.
+// Round 409: All eight ordinary/inline/separate-noinline section/kind declaration pairs 46 (1036/1033); no gain. Original contracts restored. Retained-word load order, intensity slot, final word carrier and shifted flag test remain.
 // @retail 0x2cbf0
 short function_2cbf0(long geometry, long category, short instance, dword flags,
     long tag, dword key, long material, byte *object, short mask, byte mode,
@@ -152,12 +186,14 @@ short function_2cbf0(long geometry, long category, short instance, dword flags,
         long object_tag = *(byte **)entry->unknown10 ? **(long **)entry->unknown10 : NONE;
         long kind = function_2d000(object_tag, entry->tag, (entry->flags >> 18) & 0x7ff);
         entry->unknown00 = (entry->unknown00 & 0x1fffffff) | ((dword)kind << 29);
-        if (function_449e0((short)index, entry->tag == NONE, (bool)((entry->unknown00 >> 12) & 1)))
+        bool load = entry->tag == NONE;
+        bool instance_bit = (bool)((entry->unknown00 >> 12) & 1);
+        if (function_449e0((short)index, load, instance_bit))
         {
             s_2cb30_state *state = g_4c0b78.state;
             if (!state->active)
                 ++g_4c0b78.previous;
-            if (TEST_FIELD_BIT((entry->unknown00 >> 6) & 1))
+            if (entry->unknown00 & 0x40)
             {
                 section = (byte *)function_44940((short)index, (bool)((entry->unknown00 >> 12) & 1));
                 *(void **)(entry->unknown10 + 4) = NULL;

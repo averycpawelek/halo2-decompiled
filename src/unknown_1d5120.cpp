@@ -87,7 +87,23 @@ void function_1d56f0(s_havok_component *component)
     }
 }
 
-// score 77 (was 77): lookup address operands and the success-tail setter transport remain.
+// score 77 (was 77): every frame home and the body up to the success tail agree; left: the rigid-body
+// lookup's address operands (ours `[base+index]`, retail `[index+base]`) and the success tail, BLOCKED-BY
+// 0x1d0cf0 (retail passes it the transform in EAX, the component in EBX and the index in ECX, plain ret;
+// ours pushes index and component), which also moves the release path's scratch registers.
+// Tried: rotation value 190; pose value 232; rotation simd 150; info first copy 87; source pose value 216;
+// completed count 149; filter value 119; initial height value 79; inc/dec update alone 90; with the
+// 12-byte callback 80; callback after the direction 80; callback declared at the world add 86; the 12-byte
+// callback with the subtraction update 119; two-use body/motion sources 223/215; output columns
+// 021/102/201/210 78/80/80/79; translation publication/input before rotation 84/83; body pointer local 77;
+// filter first 102; shape before the transform copy 77; direct rigid_bodies indexing 77; transform by
+// assignment 77; count publication after rotation columns 0/1/2, translation construction and pose copy 77
+// each; query-derived success 110; derived success with late count 110; collision-first branch 77;
+// shape/filter/both/reversed fields before lookup 110/109/107/105; shape/filter/both before snapshot
+// 77/102/84; pose before input construction 217; a component-first getter 77; the tail through the
+// existing matrix setter (0x1d0c20, called out of line here) 113; `(data + index)->rigid_body` 77; the
+// body pointer declared at the top 77; a named index local 77.
+// lookup address operands and the success-tail setter transport remain.
 // Earlier frame 0x104 and MXCSR homes agreed; result/direction/callback homes and setter convention
 // differ; tried rotation value 190; pose value 232; rotation simd 150; info first copy 87; source pose value
 // 216; completed count 149; filter value 119; initial height value 79.
@@ -113,6 +129,14 @@ void function_1d56f0(s_havok_component *component)
 // Round 402: corrected-frame transform/translation/both at loop entry 77/77/77;
 // at function entry 77/77/77; native translation/all-column SIMD construction 77/138.
 // All restored; lookup operand order and success-tail setter transport remain.
+// Round 7 (lane 13): the tail's stores match retail apart from the setter's pushed arguments (BLOCKED-BY
+// 0x1d0cf0, whose file is held this round); matched 0x1d08e0 uses the same getter expression and gets
+// retail's index-first `[eax+edx+0x40]`. Direct `.data[index]` 77; array pointer read into a local first
+// 77; index-first subscript 77; the component parameter renamed to sort last 77; the source transform
+// through a const reference 77; the setter call's index replaced by a constant (diagnostic) 87.
+// Round 5: direct `.data[index]` lookup 77; `index[data]` subscript 77; index copied to a local at
+// entry for the lookup and the setter 77; entry reference through the array's operator[] 77;
+// forceinline getter declaration 77 (the SIB order ignores source operand order).
 // @retail 0x1d5120
 bool function_1d5120(s_havok_component *arg_0, long arg_1, long arg_2, long arg_3,
  real arg_4, long *arg_5, long arg_6)

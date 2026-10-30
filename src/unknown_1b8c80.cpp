@@ -11,6 +11,8 @@
 #include "unknown_0d0690.h"
 #include <float.h>
 
+static __forceinline long real_to_long(real value);
+
 /* the slot tests 0x5f, 0x60, 0x5e, 0x4d, 0x4e and 0x4f, and slot type 0x4c */
 
 struct s_slot_4c
@@ -705,7 +707,7 @@ long function_1e4a50(long character_index);
 void __stdcall function_26c2d0(long prop_index);
 void function_270590(s_path_source *source, s_type_c3b527 const *point, long node_index);
 
-// score 210 (was 225): frame 0xb4 and a common result exit agree; the signed-word
+// score 160 (was 160): frame 0xb4 and a common result exit agree; the signed-word
 // default load, field tests, output scheduling and later register homes still differ.
 // Earlier: the shared default loads as a signed word rather than a dword; frame homes differ.
 // Unsigned-word/dword result 306/225; byte preparation with long/word/dword result 225/306/225;
@@ -717,6 +719,7 @@ void function_270590(s_path_source *source, s_type_c3b527 const *point, long nod
 // result: 225/225/224/224/210/210/210/210. Original payloads with guarded/positive admission
 // 210/210; plain 210, 1188/1177 bytes. Keep only positive admission and one result exit;
 // temporary payload types restored.
+// Round 183: short/word/dword result 250/250/160; word/scalar-word flags 266/266; selection at entry/after result 248/248; preparation after acquisition 162, with early selection 249; short plus word flags 251; early selection plus word flags 191; middle-phase selection 244, with either word view 220/220; shared candidate state 160; named weighted distance 160. All restored.
 // @retail 0x1b99d0
 short __stdcall function_1b99d0(long actor_index, s_slot *slot)
 {
@@ -1044,15 +1047,19 @@ s_slot_handler_2x g_47e9d0 =
 	1, 10, 1.5f, 0x5b
 };
 
-// score 47 (was 47): pool/status carriers and return scheduling differ; conversion homes agree at 216/212 bytes.
-// Prior narrow status 60 at 212 bytes; retail uses wide status loads while only low words are returned.
-// Slot data block: actor-first long/short status with nested or rejection guards 47/47 and 60/60;
-// block-first long 63/63; block-first short 45/45 at 214/212, a two-point gain restored.
-// g_46fbe4 and g_46fbe8 have signed-word loads here versus
-// dword loads in retail; their shared declarations remain short.
-// Single-observation continuation selected by complementary tests, slot-data
-// view with long if/ternary result 86/86 and short result 77/77;
+// score 1 (was 47): only the vehicle-less exit's `je` target differs: retail jumps to the epilogue
+// after the vehicle status's `mov ax, di`, ours to the one after the failure's `mov ax, [g_46fbe4]`
+// (retail lays the failure return out after that epilogue).
+// Earlier: prior narrow status 60 at 212 bytes; slot data block (retail addresses the slot itself, no
+// +0xc base): actor-first long/short status with nested or rejection guards 47/47 and 60/60; block-first
+// long 63/63; block-first short 45/45 at 214/212; single-observation continuation selected by
+// complementary tests, slot-data view with long if/ternary result 86/86 and short result 77/77;
 // whole-slot receiver with the same choices 86/86/77/77.
+// Round 93: the vehicle arm's own short status, returned from the arm, with the result declared first
+// 47 -> 1; that status assigned to the result instead 7; vehicle-less exit first 73 (status taken
+// from the result 1); early returns for the NONE tests and the timer 1; three separate early returns
+// 25; failure assignments to the result with one final return 3; else-arm and inner failure returns
+// 1/1; one combined condition 1; long result 47; a status initialized from the result 55.
 // Native pool/status carriers and the shared status load width remain.
 // Round 155, short status: early return at the actor test 73; status assigned in both arms 77; status
 // declared first/after actor/element first 61/61/48; global returned at the actor test with a block status 73;
@@ -1060,35 +1067,28 @@ s_slot_handler_2x g_47e9d0 =
 // @retail 0x1ba4e0
 short __stdcall function_1ba4e0(long actor_index, s_slot *slot, bool active)
 {
+	short result = g_46fbe8;
 	s_actor_view *actor = actor_get(actor_index);
 	s_slot_4c *state = (s_slot_4c *)slot;
 	s_4c_element *element = (s_4c_element *)element_502424_get(state->element_index);
-	long result = g_46fbe8;
 
 	state->unknown24++;
 	if (element->object_index != NONE && state->unknown1c != NONE)
 	{
-		real seconds = g_510c54->field_2_3 * 10.0f;
-		long ticks;
-
-		__asm
-		{
-			fld seconds
-			fistp ticks
-		}
-
-		if (state->unknown24 <= ticks)
+		if (state->unknown24 <= real_to_long(g_510c54->field_2_3 * 10.0f))
 		{
 			if (actor->unknown26c != NONE)
 			{
-				result = g_46fbe4;
+				short status = g_46fbe4;
+
 				if (element->unknown7c > 1)
 				{
 					if (actor->unknown266)
-						result = g_46fbe8;
+						status = g_46fbe8;
 					if (!element->unknown84)
 						function_1fb7e0(0x39, actor_index, NULL, NONE, NONE);
 				}
+				return status;
 			}
 			return result;
 		}
@@ -1145,6 +1145,7 @@ struct s_seat_approach_result
 // Round 252: inline/forceinline 3D helper declarations 147/147; whole actor point 273;
 // shared planar direction helper 147; branch-owned bonus alone/with direction 194/194;
 // external position reference with both 218; whole point with both 274. All restored.
+// Round 183: actual 3D/all-helper forceinline contracts 147/147; early close 146 (one point); external pointer/reference 211/211; both planar results and address/reference pairs 209/209/209; output copies 147, with pointer/results 211/209; early close plus native square/root 142 (changed association, ineligible). All restored.
 // @retail 0x1baae0
 bool function_1baae0(long actor_index, long object_index, short seat_index, bool ignore_bonus,
 	bool ignore_reserved, bool vertical, s_seat_approach_result *out)
@@ -1452,7 +1453,7 @@ struct s_unit_child_iterator
 };
 struct s_damage_object;
 s_damage_object *function_d05c0(s_unit_child_iterator *iterator);
-void function_1e3400(long actor_index, long squad_index);
+void function_1e3400(long actor_index, short squad_index);
 void function_201ad0(long squad_index, long object_index);
 
 // score 218 (was 218): frame 0x32c and length agree; the driver byte spills

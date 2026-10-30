@@ -314,7 +314,7 @@ void __stdcall function_124750(dword flags)
 
 void function_125a90(long value);
 
-// score 46 (was 46): the address of the record is built here with an imul
+// score 47 (was 47): the address of the record is built here with an imul
 // into ESI and an add; retail multiplies into EAX and forms the address with a
 // lea, so the type byte that is tested afterwards is compared in another value.
 // Retail also falls from the type test into the special-type arm, then the
@@ -322,6 +322,10 @@ void function_125a90(long value);
 // special arm as `type != 0x26 || a` 88; as `type == 0x26 && !a` 88; the kind
 // tests joined with && 46; the type test negated, kind arm first 46; removal
 // first with an if/else special arm 50.
+// Round 411: Existing calling iterator with returned/salted receivers and remove/keep
+// decisions 115/110/168/177; existing fully inlined iterator with the same four forms
+// 115/110/168/177. Original traversal restored; the early policy load, ESI multiply
+// and special/remove/ordinary/keep ordering remain.
 // @retail 0x1264c0
 void __stdcall function_1264c0(dword flags)
 {
@@ -561,108 +565,52 @@ void __stdcall function_1889d0(dword flags)
 	}
 }
 
-// score 62 (was 62): retail loads the flag word whole into bx (ours a masked byte), reloads the
-// value into ecx (ours eax) and picks other scratch registers in the sound-tag loop and the final
-// flag test; without the 0x60 mask the flags and the value swap ebx and the stack slot.
-// Tried: flags/tag names 110; positive/rejection tests 110; direct parameter 160; early flag 42
-// (restored); inline query 110; shifted word/dword/byte 128/129/120; direct masks 154; first/second
-// mask 132/151; multi-use word mask 62; full-width mask 147; active-path mask 173; rejected-path mask
-// 110; query-rejection result 62; shared absolute scan 62; shared next datum 249; signed tag index 62;
-// common final flag publication 72; existing sound table helpers 62; signed short/long masked flags
-// 62/61; final parameter exit 66; final receiver ownership 55 (the global reloaded into a local by
-// hand, not kept); receiver with parameter exit 66; isolated tag scope 62; native iterator
-// initializer 118; direct reset record 62; complementary input 85; native flag copy 62; copy
-// complementary input 85; whole flag copy 110; reset array index 62; reset negative guard 62; late
-// flag positive 72; native entry ordinal 93; masked tag declaration/flag iteration scope 62/62; dword
-// parameter mask 83; scoped tag for-loop 62; paired zero chain/fill 64/123; Boolean parameter mask 62;
-// late global declaration 62; native raw word/signed word/flag object 62/62/62; masked dword 61;
-// const word 62; masked byte 155; parameter bit pair 173; typed word with pair 173. Relink scores
-// with branch targets masked (the current body 55): flag-struct copy or bitfield reads 152; word
-// local without the mask (byte, dword or no-bool shifts) 102-152; short/byte/long flag locals
-// 102/154/124; sound definition and rate-limit helpers (with a definition or index local) 55;
-// merged final flag test 67; /arch:SSE diagnostic 55.
-// Frame 0x1c agrees; raw BX flag load and later scratch receivers remain.
-// Earlier: native BX load, tag table and inactive clear receiver differ.
-// raw flags load and tag/late-global registers still differ;
-// flags/tag names 110; positive/rejection tests 110; direct parameter 160; early flag 42 (restored);
-// inline query 110; shifted word/dword/byte 128/129/120; direct masks 154; first/second mask 132/151;
-// multi-use word mask 62; full-width mask 147.
-// Active-path mask 173; rejected-path mask 110; query-rejection result 62;
-// shared absolute scan 62; shared next datum 249; signed tag index 62;
-// common final flag publication 72; existing sound table helpers 62.
-// Signed short/long masked flags 62/61; final parameter exit 66;
-// final receiver ownership 55 (the global reloaded into a local by hand, not kept); receiver with parameter exit 66;
-// isolated tag scope 62; native iterator initializer 118; direct reset record 62.
-// flags/tag names 110; positive/rejection tests 110; direct parameter 160; early flag 42
-// (restored);
-// inline query 110; shifted word/dword/byte 128/129/120; direct masks 154; first/second mask
-// 132/151;
-// native flags BX load and tag/late-global registers remain.
-// complementary input 85; native flag copy 62; copy complementary input 85; whole flag copy 110;
-// reset array index 62; reset negative guard 62; late flag positive 72; native entry ordinal 93.
-// Raw BX flag load and later receiver allocation remain.
-// frame 0x1c agrees; raw flag-word load, tag and late-global registers differ.
-// Earlier 62 (was 110): raw flags load and tag/late-global registers still differ;
-// Earlier 62 (was 62): native flags BX load and tag/late-global registers remain.
-// Masked tag declaration/flag iteration scope 62/62; dword parameter mask 83;
-// scoped tag for-loop 62; paired zero chain/fill 64/123; Boolean parameter mask 62; late global declaration 62.
-// Zero-or-one parameter byte/short/word/long 62/125/125/141; query/update noinline
-// declarations 62/62; signature-first initializer 64; signed byte table ordinal 62.
-// Native raw word/signed word/flag object 62/62/62; masked dword 61;
-// const word 62; masked byte 155; parameter bit pair 173; typed word with pair 173.
-// Tag/volume/reset/final-callback inline-noinline declarations 62 each; tag iterator/global receiver/both names 62 each; composite release predicate 151.
-// Tag field reads 62; flag word reads 110; both reads 110; native bitfield snapshot 128;
-// direct snapshot bits 154; snapshot plus tag reads 128; per-use bits 110; bits plus tag reads 110.
-// Active-state-first/pool for/release continue/active for 62/62/62/62;
-// whole record input 195; active record input 183;
-// record pool for/release continue 195/195.
+/* releases the deleted looping sounds and the active ones a reset ends (with flags bit 6 the
+   ones whose tag has an effect of type 0x20 or 0x26 stay), clears the tags' entries at +0x4c of
+   g_51ebd4 and the sound globals, and with flags bit 5 updates the listeners once */
 // @retail 0x188ac0
 void __stdcall function_188ac0(dword flags)
 {
 	bool a = (flags >> 6) & 1;
-	s_record_pool *array = g_4ed28c;
-	long datum = data_datum_index(array, function_16bc00(array, 0));
+	long datum = data_datum_index(g_4ed28c, function_16bc00(g_4ed28c, 0));
 	s_tag_iterator iterator;
 	long tag_datum;
 	s_looping_sound_globals *globals;
 
 	while (datum != NONE)
 	{
-		s_element_18 *element = ELEMENT(array, s_element_18, datum);
+		s_element_18 *element = ELEMENT(g_4ed28c, s_element_18, datum);
 
 		if (element->state == 2)
-			record_pool_release(array, datum);
+			record_pool_release(g_4ed28c, datum);
 		else
 		{
-			word flags5 = *(word const *)&element->flags & 0x60;
+			word flags5 = *(word const *)&element->flags;
 			if ((bool)((flags5 >> 5) & 1))
 			{
 				long value = element->value;
 				if (!(function_18d360(value) && a))
 				{
 					if ((bool)((flags5 >> 6) & 1) || (*(byte *)g_4e3b44[value & 0xffff].flags & 2))
-						record_pool_release(array, datum);
+						record_pool_release(g_4ed28c, datum);
 					else
-					{
 						function_18d290(value, datum);
-						array = g_4ed28c;
-					}
 				}
 			}
 		}
 
-		datum = data_datum_index(array, data_find_index(array, datum == NONE ? 0 : (datum & 0xffff) + 1));
+		datum = data_datum_index(g_4ed28c, data_find_index(g_4ed28c, datum == NONE ? 0 : (datum & 0xffff) + 1));
 	}
 
 	iterator.index = 0;
 	iterator.signature = 0x736e6421;
 	while ((tag_datum = function_122c70(&iterator)) != NONE)
 	{
-		byte index = *((byte *)g_4e3b44[tag_datum & 0xffff].flags + 0xc);
+		byte *definition = (byte *)g_4e3b44[tag_datum & 0xffff].flags;
 
-		if (index != 0xff)
+		if (definition[0xc] != 0xff)
 		{
-			long *entry = (long *)(g_51ebd4->entries + (char)index * 0x1c);
+			long *entry = (long *)(g_51ebd4->entries + (char)definition[0xc] * 0x1c);
 
 			if (entry)
 			{
@@ -677,14 +625,9 @@ void __stdcall function_188ac0(dword flags)
 	function_220fd0((s_sound_driver_volumes const *)globals->gains);
 	memset(globals->slots, 0xff, 0x100);
 	function_225ab0();
-	if (flags & 0x20)
-	{
-		if (!g_4ed288->flag241)
-			function_18bb80(3.4028235e38f);
-		g_4ed288->flag241 = 0;
-	}
-	else
-		g_4ed288->flag241 = 0;
+	if ((flags & 0x20) && !g_4ed288->flag241)
+		function_18bb80(3.4028235e38f);
+	g_4ed288->flag241 = 0;
 }
 
 // @retail 0x1c3540

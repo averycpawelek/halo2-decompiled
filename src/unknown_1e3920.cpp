@@ -539,7 +539,7 @@ real normalize2d(point2f *vector);
 real function_267370(long volatile object_index);
 
 
-// score 98 (was 192): the water-plane test is 0x11c120's body (location_point_in_zone_inline) and the marker
+// score 98 (was 98): the water-plane test is 0x11c120's body (location_point_in_zone_inline) and the marker
 // read existing 0xcaf90; left: the NONE resets keep -1 in EDI, which the inlined plane compares
 // then share (retail compares with immediates, gives EDI to the cluster table and forms -1 in ECX
 // at the resets for them and the carrier compare), the carrier ternary lands in EDI instead of EAX,
@@ -595,6 +595,11 @@ real function_267370(long volatile object_index);
 // arms of the flag test (retail forms the vector address before the select) 98. Dropping
 // 0x11c120's noinline also inlined it into matched 0x25ccd0, so its body moved to a header
 // forceinline helper for the callers retail inlines it into (98, 0x11c120 and 0x25ccd0 still match).
+// Round 114: NONE-initialised carrier with an if/else chain 98; the chain with an explicit NONE else 98;
+// chained NONE resets 99; both crosses through the actor fields at each use 100; named forward
+// output pointer 96. Locate-only: the plane test's two compares against another constant give the
+// plane block exactly (54): the -1 shared between them and the resets is the cause; the resets then
+// take -1 in EAX (retail ECX) and the carrier stays in EDI.
 // @retail 0x1e3b60
 void function_1e3b60(long actor_index)
 {
@@ -894,80 +899,36 @@ void __stdcall function_1e2570(long actor_index, word type, long object_index, r
 }
 
 #include "unknown_1fb7e0.h"
-// score 44 (was 44): retail keeps the plain __fastcall convention (actor in ECX, old weapon in
-// EDX, player and new weapon on the stack); LTCG gives ours the old weapon in ECX and the actor
-// in EDX, and 0x1ca260 passes its first two arguments swapped to fit. With the standard marker
-// and 0x1ca260 passing (arg_0, arg_1, arg_2, arg_3), 0x1ca260 matches and this body scores: as
-// written 87; player address first 82; a volatile read of new_weapon at entry 52 (left: retail
-// copies the second masked index before the multiply, and the middle arm's player field goes
-// through EAX). Without the marker: player first 48, player after snapshots 28 (both break
-// 0x1ca260). Earlier: inline/noinline 44/44; direct player/replacement only 82/55;
-// replacement-first 86; late replacement zero 44; old-greater first 47; early unit observation 91;
-// shared object lookup 44; direct tag reads 43; early player with shared lookup 75; direct
-// parameters 82; conditional values 81; shared target 79; eligibility tests 45; value homes 44;
-// old/new default arms 45/44; shared player lookup late/entry 44/81; late actor receiver 44; word
-// event result 123; object global 44; both lookup globals 43; indexed native headers 44; native
-// player 44; global tables/native entry player 85; native entry player 81; player fields at use
-// 128; native item/header chain 44.
-// actor/old-weapon register pair and early player construction remain.
-// Round 36: the corrected forwarding call keeps 0x1ca260 matched; this body remains 48 differences.
-// Retail 0x1e18f0
-// Earlier: No frame gap; incoming actor/old-weapon ownership and early player address differ.
-// No frame gap; incoming actor/old-weapon ownership and early player address differ.
-// Earlier: the corrected forwarding call kept 0x1ca260 matched; this body then scored 48.
-// score 44 (was 44): No frame gap; actor/old-weapon ownership and early player construction still differ.
-// Earlier at 44 (was 44): No frame gap; incoming actor/old-weapon ownership and early player address differ.
-// Earlier: no frame gap; actor/old-weapon registers and early player address differ.
-// Inline/noinline 44/44; direct player/replacement only 82/55; replacement-first 86;
-// late replacement zero 44; old-greater first 47; early unit observation 91.
-// entry pool saves and actor/old-weapon registers still differ.
-// Shared object lookup 44; direct tag reads 43; early player with shared lookup 75;
-// direct parameters 82; conditional values 81; shared target 79; eligibility tests 45; value homes 44.
-// Earlier: The entry actor/old-weapon registers and early player address still differ
-// without a frame gap. Old/new default arms 45/44; shared player lookup late/entry 44/81; event
-// inline/noinline 44/44; late actor receiver 44; word event result 123.
-// Object global 44; both lookup globals 43; indexed native headers 44; native player 44;
-// global tables/native entry player 85; native entry player 81; player fields at use 128; native item/header chain 44.
-// Six coherent formal/caller orders 44 each; pair order with early player 81,
-// plus tag fields at use 75; stdcall/cdecl 44/59, cdecl also loses the forwarding caller.
-// Increase result 44; both comparison results 109; results before unit 121; results and entry player
-// 104; results with unit guard 90; early results and guard 94; complete event predicates 153; entry
-// player with guard 85.
-// Previous/replacement/both property inputs 116/119/164; tag objects 130/133/181;
-// both property/tag inputs with early player 163/188.
 // @retail 0x1e18f0
 void __fastcall function_1e18f0(long actor_index, long old_weapon, long player_index, long new_weapon)
 {
  long const *player_reference = &player_index;
  long const *weapon_reference = &new_weapon;
- s_record_pool *objects = g_4e0300;
- s_tag_instance *definitions = g_4e3b44;
+ byte *player = g_4e8c24->data + (*player_reference & 0xffff) * 0x21c;
  real old_value = 0.0f;
  real new_value = 0.0f;
  if (old_weapon != NONE)
  {
-  byte *object = *(byte **)(objects->data + (old_weapon & 0xffff) * 12 + 8);
-  old_value = *(real *)(definitions[*(long *)object & 0xffff].bytes + 0x238);
+  byte *object = *(byte **)(g_4e0300->data + (old_weapon & 0xffff) * 12 + 8);
+  old_value = *(real *)(g_4e3b44[*(long *)object & 0xffff].bytes + 0x238);
  }
  if (*weapon_reference != NONE)
  {
-  byte *object = *(byte **)(objects->data + (*weapon_reference & 0xffff) * 12 + 8);
-  new_value = *(real *)(definitions[*(long *)object & 0xffff].bytes + 0x238);
+  byte *object = *(byte **)(g_4e0300->data + (*weapon_reference & 0xffff) * 12 + 8);
+  new_value = *(real *)(g_4e3b44[*(long *)object & 0xffff].bytes + 0x238);
  }
- long unit = actor_get(actor_index)->unknown018;
- byte *player = g_4e8c24->data + (*player_reference & 0xffff) * 0x21c;
  if (new_value > old_value)
  {
-  if (unit != NONE)
-   function_20ba60(0xbc, unit, *(long *)(player + 0x2c), NONE, NONE, 0);
+  if (actor_get(actor_index)->unknown018 != NONE)
+   function_20ba60(0xbc, actor_get(actor_index)->unknown018, *(long *)(player + 0x2c), NONE, NONE, 0);
  }
  else if (old_value > new_value)
  {
-  if (unit != NONE)
-   function_20ba60(0xbd, unit, *(long *)(player + 0x2c), NONE, NONE, 0);
+  if (actor_get(actor_index)->unknown018 != NONE)
+   function_20ba60(0xbd, actor_get(actor_index)->unknown018, *(long *)(player + 0x2c), NONE, NONE, 0);
  }
- else if (unit != NONE)
-  function_20ba60(0xbe, unit, *(long *)(player + 0x2c), NONE, NONE, 0);
+ else if (actor_get(actor_index)->unknown018 != NONE)
+  function_20ba60(0xbe, actor_get(actor_index)->unknown018, *(long *)(player + 0x2c), NONE, NONE, 0);
 }
 
 
@@ -1009,7 +970,8 @@ void __stdcall swarm_delete(long perception_index);
 void function_1e04a0(long primary_tag, long character_index, long unit_index, long secondary_tag, short grenade_type);
 
 
-// score 320 (was 320): Frame 0x118 agrees; sentinel EDI/ESI, squad/substitution homes and success layout remain.
+// score 320 (was 320): Frame 0x118 agrees; persistent sentinel EDI/ESI and squad/substitution homes remain.
+// Earlier: Frame 0x118 agrees; sentinel EDI/ESI, squad/substitution homes and success layout remain.
 // Earlier 345 (was 364): frame 0x11c versus 0x118; sentinel and success blocks differ.
 // frame 0x118 agrees; entry sentinel, squad and substitution/result homes differ.
 // Earlier form: frame 0x11c versus 0x118; sentinel and success blocks differ.
@@ -1080,6 +1042,8 @@ void function_1e04a0(long primary_tag, long character_index, long unit_index, lo
 // DL167: Native unsigned character/squad/returned handle interfaces, seven nonempty
 // subsets, and all with the unsigned actor result: 320 each. Every declaration, original
 // handle domain and complete body restored; frame 0x118 and sentinel EDI/ESI remain.
+// Round 414: direct success-path object/weapon/metadata views, their pairs and all three
+// 320 each; immutable placement view at each use 339. Original observations and full body restored.
 // @retail 0x1e0850
 long __stdcall function_1e0850(long character_index, long squad_index, s_203780 const *placement, bool substitute)
 {
@@ -1202,12 +1166,6 @@ done:
 	return actor_index;
 }
 
-// score 38 (was 38): retail keeps the new index in ESI where ours keeps it in
-// EDI, and the branch that follows goes to another place, so the calls after
-// it land at different offsets. The seed store and count addition also differ.
-// Shared random-index 48; implicit count conversion 38; shared random-index with
-// implicit conversion 48; full-width upper 59; split/reversed bounds 38;
-// inline depth zero 60; global optimization off 684.
 // @retail 0x1e04a0
 void function_1e04a0(long primary_tag, long character_index, long unit_index, long secondary_tag, short grenade_type)
 {
@@ -1281,7 +1239,7 @@ void function_1e04a0(long primary_tag, long character_index, long unit_index, lo
 			short lower = *(short *)(settings + 0x34);
 			short upper = (short)(*(short *)(settings + 0x36) + 1);
 			long count = ((random_next(&g_4e7408->unknown0) * (upper - lower)) >> 16) + lower;
-			function_cccd0(unit_index, grenade_type, (char)count);
+			function_cccd0(unit_index, grenade_type, count);
 		}
 	}
 }
@@ -1631,7 +1589,8 @@ PRIVATE inline long equipment_secondary_weapon_r21(long unit_index)
 	return slot != NONE ? unit->weapons[slot] : NONE;
 }
 
-// score 263 (was 263): Frame 0x14 and actor ESI agree; the probability and delay clamps now match
+// score 263 (was 263): Frame 0x14 and actor ESI agree; input EDI/EBX, pool retention and scalar homes remain.
+// Earlier: Frame 0x14 and actor ESI agree; the probability and delay clamps now match
 // retail's code; the actor index stays in EDI instead of EBX and the object pool is reloaded instead
 // Frame 0x14 and actor ESI agree; input EBX/object-pool EDI allocation and scalar/ammunition homes remain.
 // Earlier: probability/delay clamps agree; the actor index stays in EDI instead of EBX and the object pool is reloaded instead
@@ -1694,6 +1653,9 @@ PRIVATE inline long equipment_secondary_weapon_r21(long unit_index)
 // Round 249: plain native two-slot shared-query traversal, long/short/word/byte
 // ordinal 275/324/324/324; existing unit receiver with those domains 275/324/324/324.
 // Original private queries, native object declaration and complete body restored.
+// Round 414: current loop weapon captured 263; short/long scalar ammunition count 266/265;
+// weapon plus those counts 266/265; private output clear before draw, alone/with weapon/with
+// weapon and short count 263/263/266. Original producers, clear order and complete body restored.
 // @retail 0x1e2a90
 void function_1e2a90(long actor_index)
 {

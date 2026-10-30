@@ -224,10 +224,27 @@ bool camera_velocity_profile_new(s_camera_velocity_profile *profile, real total_
 // locals 49, b * (b * accelerations[1]) 99, a loop over the three segments
 // 59-65 (unrolled, factored), aggregate initializers 49, accelerations
 // zero-initialized 101, the arrays filled or declared in another order 49-50.
+// Round 16 (lane 10): retail's three tick clamps are PIN(x, 0, bound) with the value and bound
+// re-evaluated (the macro this file already defines further down); that form gives retail's integer
+// code exactly, but the float preloads stay 2 bytes shorter and shift the listing: 96 (aligned
+// 45 -> 37); with one 2x3 coefficient array 95 (0x1c frame); with the last term as a separate +=
+// 90 (retail's add order and single-exit tail); with both 88 (aligned 33: only the coefficients'
+// registers differ, retail spills both peak copies and the acceleration and keeps start and
+// deceleration in xmm6/xmm7, ours spills one); the fills in retail's load order 88 (spills start
+// instead); a, b, c declared first 88; aggregate initializers 90.
 // Round 181: all coefficient field reads at uses 117; complete native profile snapshot 107; snapshot
 // plus field reads 105; profile reference 49, plus field reads 117; reordered profile/ticks 49, plus
 // field reads 117, plus native snapshot 107. Coefficient homes and 0x1c frame remain unresolved;
 // original arrays and input binding restored.
+// Round 93 (PIN clamps make the integer part exact; the coefficient spill choice is what is left):
+// PIN + 2x3 array + last term as a separate += 88 (aligned 23); on it the second peak copied from the
+// first element 114 (259 bytes); PIN + two arrays + separate += 90 (frame 0x10, only rates[2] homed);
+// on it renamed arrays 90 (names do not move the spill), aggregate initializers 90, segment times in a
+// float array summed in a loop 106 (unrolled and factored). On the 2x3 form, sum texts: per-segment
+// terms 95, coefficient-first products 88, rates then accelerations 95, one statement per segment
+// 105, one six-term sum 95, squares grouped t * (t * k) 86; the arrays in one local struct 88;
+// peaks filled by a chained assignment 114 (both peaks one register, no frame). The preloads keep
+// four coefficients in xmm4-7 in every form; retail spills the peaks and the acceleration.
 // @retail 0x16be50
 real camera_velocity_profile_evaluate(s_camera_velocity_profile const *profile, long ticks)
 {

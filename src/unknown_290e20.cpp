@@ -407,6 +407,12 @@ struct s_ai_scene_assignment
 // flips it) and the iterator callees' file being linked in. Parameters used
 // directly (address forms removed) 56; next role as a long local 61 (347 bytes);
 // `while (next && count < maximum)` 56; pre-increment test 56; flipped compares 56;
+// outputs/score declared outside the loop 56; local_0 recomputed each pass worse;
+// parameter names in either alphabetical order 56; score stored first 57; the
+// recursion arm first 64; a short next-role local 88. Screened (copies in one LTCG
+// build): the count in a local, the copy by index or by pointer step, the last-role
+// test at its use, the role pointer or assignment pointer later, the iterator at
+// the top, a NONE default with one exit: identical code or worse.
 // outputs/score declared outside the loop 56; local_0 recomputed each pass worse.
 // Round 242: default-selected result with early rejection/positive enumeration 56/56;
 // initialized selected result with positive enumeration 56; native-width completion result 123.
@@ -417,18 +423,18 @@ struct s_ai_scene_assignment
 // actual previous-assignment source and selector-output store priority: eight at 56;
 // previous-source copies reach 347 bytes. All one-use element-pointer forms restored.
 // @retail 0x2919e0
-void __stdcall function_2919e0(s_ai_scene *arg_0, s_ai_scene_assignment *arg_1, short *arg_2, short arg_3,
-	short arg_4, short arg_5, long arg_6, long arg_7, long arg_8)
+void __stdcall function_2919e0(s_ai_scene *scene, s_ai_scene_assignment *assignments, short *assignment_count, short maximum_count,
+	short role_index, short role_count, long ai_index, long ai_index2, long ai_index3)
 {
-	s_ai_scene_assignment *local_0 = &arg_1[*arg_2];
-	s_291800 *local_1 = &((s_291800 *)arg_0->roles)[arg_4];
-	bool local_2 = arg_4 + 1 >= arg_5;
+	s_ai_scene_assignment *local_0 = &assignments[*assignment_count];
+	s_291800 *local_1 = &((s_291800 *)scene->roles)[role_index];
+	bool local_2 = role_index + 1 >= role_count;
 	long local_3;
 	switch (*(short *)((byte *)local_1 + 4))
 	{
-	case 0: local_3 = arg_6; break;
-	case 1: local_3 = arg_7; break;
-	case 2: local_3 = arg_8; break;
+	case 0: local_3 = ai_index; break;
+	case 1: local_3 = ai_index2; break;
+	case 2: local_3 = ai_index3; break;
 	default: return;
 	}
 	if (local_3 == NONE)
@@ -437,29 +443,30 @@ void __stdcall function_2919e0(s_ai_scene *arg_0, s_ai_scene_assignment *arg_1, 
 	ai_actor_iterator_new(local_3, &local_4);
 	while (ai_actor_iterator_next(&local_4))
 	{
-		if (*arg_2 >= arg_3)
+		if (*assignment_count >= maximum_count)
 			break;
 		long local_5;
 		short local_6;
-		real local_7 = function_291800(local_4.actor_index, local_1, (s_291801 *)local_0, arg_4, &local_5, &local_6);
+		real local_7 = function_291800(local_4.actor_index, local_1, (s_291801 *)local_0, role_index, &local_5, &local_6);
 		if (local_7 > 0.0f)
 		{
-			local_0->actor_indices[arg_4] = local_4.actor_index;
-			local_0->variant_names[arg_4] = local_5;
-			local_0->scores[arg_4] = local_7;
-			local_0->variant_indices[arg_4] = local_6;
+			local_0->actor_indices[role_index] = local_4.actor_index;
+			local_0->variant_names[role_index] = local_5;
+			local_0->scores[role_index] = local_7;
+			local_0->variant_indices[role_index] = local_6;
 			if (local_2)
 			{
-				++*arg_2;
-				if (*arg_2 >= arg_3)
+				++*assignment_count;
+				if (*assignment_count >= maximum_count)
 					break;
-				local_0 = &arg_1[*arg_2];
+				local_0 = &assignments[*assignment_count];
 				*local_0 = *(local_0 - 1);
 			}
 			else
 			{
-				function_2919e0(arg_0, arg_1, arg_2, arg_3, arg_4 + 1, arg_5, arg_6, arg_7, arg_8);
-				local_0 = &arg_1[*arg_2];
+				function_2919e0(scene, assignments, assignment_count, maximum_count, role_index + 1, role_count,
+					ai_index, ai_index2, ai_index3);
+				local_0 = &assignments[*assignment_count];
 			}
 		}
 	}

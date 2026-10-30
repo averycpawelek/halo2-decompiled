@@ -517,6 +517,9 @@ extern point2f *g_468778;
 // Round 399: Native slot callback input, original/actor-first lookup, with entry/late result defaults,
 // constant-return exits and early rejection: 375/413/409/426/425/393/440/413. Body and declaration
 // restored.
+// Round 38: Common result set by independent final failure tests, all six field orders 375
+// each fast; nested success assignment 380; failure-result ladder 373, all 1549 bytes.
+// Two-point best rejected; original result expression, defaults and complete body restored.
 // @retail 0x1aa0d0
 bool __stdcall function_1aa0d0(long arg_0, s_slot *arg_1)
 {
@@ -758,6 +761,8 @@ static __forceinline long real_to_long(real value);
 // storage: 476/476/476/393/395/396/438/454. Complete original entry/result and body restored.
 // Round 399: Magnitude/weight phase scope, readonly magnitude, magnitude/distance names and all
 // combinations, then coefficient/time names: 384 each. Original restored.
+// Round 206: Combined metadata/prop guard, query rejection else-if, typed request direction and all
+// subsets [384, 384, 384, 384, 384, 384, 384]; all with returned admission predicate 517. Original restored.
 // @retail 0x1aab50
 bool __stdcall function_1aab50(long arg_0, s_slot *arg_1)
 {
@@ -937,20 +942,6 @@ bool __stdcall function_1aab50(long arg_0, s_slot *arg_1)
 	return local_2;
 }
 
-// score 31 (was 31): native frame agrees; stack-input scratch and object/prop
-// receivers differ. Fast: native result enum 32; lookup declarations 32;
-// immutable actor binding 32; read-only entry 32; inner facing 32;
-// complete state memory view 32, with inner facing 32; callback
-// noinline declaration 32. Original fast 32, plain 31; time getter kept.
-// object/prop scratch registers, state receiver and exit displacements differ.
-// External tag reference 32 fast; actor reference 32; node reference 32; tag/actor 32; tag/node 32.
-// Node/actor references 32; tag/node/actor 32; state reference 32. Unchanged fast preview is also 32.
-// The first register difference is the 0x110ab0 push (ECX, retail EAX); the later lookups follow it.
-// Object header getter 32; named unit index 124; declarations before assignments 32; result set
-// before the test 32; explicit NULL test 32 (fast).
-// Round 70 fast: read-only object 32; object and actor views 32; actor view 32;
-// early result declaration 32; hoisted choice declaration 32; hoisted real declaration 32;
-// repeated object accessor 35; both existing property helpers 31 (plain 31). Original body restored.
 // @retail 0x1a9ec0
 short __stdcall function_1a9ec0(long arg_0)
 {
@@ -958,34 +949,38 @@ short __stdcall function_1a9ec0(long arg_0)
 	s_actor_view *local_0 = actor_get(arg_0);
 	s_actor_tag_entry *local_1 = (s_actor_tag_entry *)function_1e4f90(arg_0);
 	long local_2 = 0;
-	if (local_1 && local_0->prop_index != NONE && !function_25d9b0(local_0->prop_index) && !function_110ab0(local_0->unknown018))
+	if (local_1 && local_0->prop_index != NONE && !function_25d9b0(local_0->prop_index))
 	{
-		s_ai_object *local_3 = ai_object_get(local_0->unknown018);
-		if (!(local_3->flags19 & 1) || (!(local_3->flags19 & 2) && (local_1->flags & 1)))
+		long unit_index = local_0->unknown018;
+		if (!function_110ab0(unit_index))
 		{
-			s_prop_node_view *local_4 = prop_node_get(local_0->prop_index);
-			s_prop_state_view *local_5 = (s_prop_state_view *)function_25d690((s_prop_datum *)local_4);
-			s_prop_view_fields *local_6 = (s_prop_view_fields *)function_25d740((s_prop_node *)local_4);
-			vector3f const *facing = &local_0->unknown290;
-			if ((local_0->unknown229 || !((s_prop_state_64 *)local_5)->unknown64) && local_4->unknown27 >= 1)
+			s_ai_object *local_3 = ai_object_get(local_0->unknown018);
+			if (!(local_3->flags19 & 1) || (!(local_3->flags19 & 2) && (local_1->flags & 1)))
 			{
-				if (local_0->unknown225)
-					local_2 = 3;
-				else
+				s_prop_node_view *local_4 = prop_node_get(local_0->prop_index);
+				s_prop_state_view *local_5 = (s_prop_state_view *)function_25d690((s_prop_datum *)local_4);
+				s_prop_view_fields *local_6 = (s_prop_view_fields *)function_25d740((s_prop_node *)local_4);
+				vector3f const *facing = &local_0->unknown290;
+				if ((local_0->unknown229 || !((s_prop_state_64 *)local_5)->unknown64) && local_4->unknown27 >= 1)
 				{
-					bool choose_four = !function_1e2030(arg_0) || (local_6 && local_1->unknown0c > local_4->unknown28 &&
-						-0.4f > local_6->unknown2c.k * facing->k + local_6->unknown2c.j * facing->j + local_6->unknown2c.i * facing->i &&
-						!local_0->unknown264 && function_10f340(local_0->unknown018, 0x7000101, 0xa0005b9));
-					if (choose_four)
+					if (local_0->unknown225)
+						local_2 = 3;
+					else
 					{
-						local_2 = 4;
-					}
-					else if (local_5->unknown3c == NONE && local_1->unknown04 >= local_4->unknown28 &&
-						(local_0->times[3] == NONE || (real)(function_146650() - local_0->times[3]) * g_510c54->rate > function_1e9700(0x15) * local_1->unknown18))
-					{
-						real local_8 = function_1c9ee0(local_1->unknown08);
-						if (local_8 > function_259a0(&g_4e7408->unknown0))
-							local_2 = 3;
+						bool choose_four = !function_1e2030(arg_0) || (local_6 && local_1->unknown0c > local_4->unknown28 &&
+							-0.4f > local_6->unknown2c.k * facing->k + local_6->unknown2c.j * facing->j + local_6->unknown2c.i * facing->i &&
+							!local_0->unknown264 && function_10f340(local_0->unknown018, 0x7000101, 0xa0005b9));
+						if (choose_four)
+						{
+							local_2 = 4;
+						}
+						else if (local_5->unknown3c == NONE && local_1->unknown04 >= local_4->unknown28 &&
+							(local_0->times[3] == NONE || (real)(function_146650() - local_0->times[3]) * g_510c54->rate > function_1e9700(0x15) * local_1->unknown18))
+						{
+							real local_8 = function_1c9ee0(local_1->unknown08);
+							if (local_8 > function_259a0(&g_4e7408->unknown0))
+								local_2 = 3;
+						}
 					}
 				}
 			}

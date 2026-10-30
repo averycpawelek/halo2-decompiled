@@ -151,6 +151,8 @@ __declspec(noinline) short __stdcall function_1c8df0(short arg_3, short arg_2, p
 // secondary-byte control 5; existing side/quarter-add-scaled/triple-point constructor subsets
 // 5/26/26/5/5/26/26, native side constructor 170. No exact match; every added-byte, constructor and
 // point-lifetime form restored.
+// Round 206: Native short probe-mode contract with role-name/Boolean-primary/short-category subsets
+// [170, 170, 175, 175, 234, 234, 225, 225]. Original interface and body restored.
 // @retail 0x1c8df0
 short __stdcall function_1c8df0(short arg_3, short arg_2, point3f const *arg_4, long arg_0,
  void const *arg_1, long arg_5, bool arg_6, bool arg_7, bool arg_8, long *arg_9)

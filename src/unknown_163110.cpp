@@ -378,7 +378,8 @@ PRIVATE inline real plane_error_163db0(s_plane const *plane, point3f const *poin
 {
 	return (real)fabs(plane->normal.k * point->z + plane->normal.j * point->y + plane->normal.i * point->x - plane->d);
 }
-// score 404 (was 404): frameless guard and EDI output agree; camera/corners EBX/EBP and initial store scheduling differ.
+// score 363 (was 363): frameless admission and EDI output agree; camera/corner roles, initial stores and normal/distance scheduling differ.
+// Earlier: frameless guard and EDI output agree; camera/corners EBX/EBP and initial store scheduling differ.
 // camera in EBP and the corner array in EBX (here exchanged); retail reads the copied rectangle
 // through the copy's address (`[eax+4]`...) after the identifier store, where ours reads
 // `[edi+0x14]`... ahead of it; plane input/product residency and the first store schedule.
@@ -496,6 +497,7 @@ PRIVATE inline real plane_error_163db0(s_plane const *plane, point3f const *poin
 // Round 300: the third plane's distance store moved up beside the second plane's own zero store,
 // with the same value reaching that plane's transform 363 (was 399). The separate guard tests and
 // the result flag's declaration order were left alone.
+// Round 412: distance zeros before their normalizers, plane subsets 0/1/01/2/02/12/012, 548/400/523/523/551/536/526; all three before normal component stores 435. Original body, retained fourth-distance phase and every helper restored.
 // @retail 0x163db0
 bool function_163db0(s_camera_163db0 const *camera, box2f const *rectangle, long identifier, s_frustum_1648d0 *result)
 {

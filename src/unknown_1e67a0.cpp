@@ -245,7 +245,7 @@ void function_1e54d0(void *state, long mode)
 }
 
 // @retail 0x1e5a60
-void function_1e5a60(s_biped_physics_result *result, s_biped_physics_input const *input, void *physics)
+void function_1e5a60(void *physics, s_biped_physics_result *result, s_biped_physics_input const *input)
 {
 	byte *state = (byte *)physics;
 	result->contact_index = NONE;
@@ -586,6 +586,8 @@ PRIVATE __forceinline real inverse_sqrt_1e6360(real squared)
 // y to the limits' spill slots. Plain bits 170; on/off first with `*=` 233, with the factor on the left 233 (both
 // 1020 bytes; aligned difference 129 against this body's 154); on/off first in a jitter vector 163 (1048 bytes,
 // aligned 110, closest), its products added straight into the velocity 239.
+// Round 36: single-workspace jitter 163; shared jitter add 157; shared movement add 156; all shared updates 156;
+// jitter rename 156; shared offset scale 139; scale with direct updates 155; scale with shared jitter add 149.
 // @retail 0x1e6360
 void function_1e6360(s_biped_physics_output *output, real rate, long object_index, real blend)
 {
@@ -780,6 +782,8 @@ PRIVATE inline real initial_dot(const vector3f *a, const vector3f *b)
 // plus `!(fabs(angle) < 0.0001f)` 178, plus an in-place rotate of it 155 at 1382 B (retail re-reads
 // each axis component and puts cosine in the angle's dead slot +0x34, sine at +0x44; ours caches the
 // axis and swaps them); cosine declared first 155; five sine/cosine name pairs 155. Original restored.
+// Round 206: Complete scalar first/second cross inputs and rotation-axis observations, seven subsets
+// [194, 202, 192, 298, 339, 306, 336]; all with immutable original 336. Original restored.
 // @retail 0x1e5bb0
 void function_1e5bb0(s_biped_physics_output *output, void *physics, void *animation_state, real speed_scale,
  long component_index, long object_index, void const *definition, long value, bool b, bool turning,
