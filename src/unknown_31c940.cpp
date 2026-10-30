@@ -16,14 +16,14 @@ static __forceinline solver_scalar_31c940 sum_three_31c940(__m128 const &v)
 }
 
 static __forceinline float angular_velocity(solver_angular_row_31e7b0 const *row,
-	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b)
+	solver_velocity_31c940 *a, solver_velocity_31c940 *b)
 {
 	return sum_three_31c940(_mm_add_ps(_mm_mul_ps(a->angular, row->a), _mm_mul_ps(b->angular, row->b))).value;
 }
 
 // Keep paired projections as scalar objects until both rows are ready.
 static __forceinline solver_scalar_31c940 linear_velocity(solver_linear_row_31e7b0 const *row,
-	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b)
+	solver_velocity_31c940 *a, solver_velocity_31c940 *b)
 {
 	__m128 relative = _mm_sub_ps(a->linear, b->linear);
 	__m128 angular = _mm_add_ps(_mm_mul_ps(a->angular, row->a), _mm_mul_ps(b->angular, row->b));
@@ -31,7 +31,7 @@ static __forceinline solver_scalar_31c940 linear_velocity(solver_linear_row_31e7
 }
 
 static __forceinline void apply_angular(float const volatile &impulse, solver_angular_row_31e7b0 const *row,
-	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b, float *result)
+	solver_velocity_31c940 *a, solver_velocity_31c940 *b, float *result)
 {
 	__m128 scalar = _mm_set_ss(impulse);
 	__m128 change_a = _mm_mul_ps(_mm_shuffle_ps(scalar, scalar, 0), a->inverse_inertia);
@@ -42,7 +42,7 @@ static __forceinline void apply_angular(float const volatile &impulse, solver_an
 }
 
 static __forceinline void apply_linear(float impulse, solver_linear_row_31e7b0 const *row,
-	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b, float *result)
+	solver_velocity_31c940 *a, solver_velocity_31c940 *b, float *result)
 {
 	// SSE consumes a rounded float while result accumulation retains the x87
 	// value. Passing the impulse by reference would round both paths early.
@@ -81,6 +81,43 @@ static __forceinline float const &load_friction_scale(solver_step_31c940 * const
 	return step->friction_scale;
 }
 
+static __forceinline void solve_contact_pair(solver_step_31c940 *step, unsigned char *op,
+	solver_linear_row_31e7b0 *row, solver_velocity_31c940 *a,
+	solver_velocity_31c940 *b, float *result)
+{
+	// Complete both SIMD projections before the coupled x87 errors.
+	solver_scalar_31c940 projected_a = linear_velocity(row, a, b);
+	solver_scalar_31c940 projected_b = linear_velocity(row + 1, a, b);
+	// Retail spills the first error and second impulse to 32-bit storage.
+	volatile float error_a = row[0].linear.m128_f32[3] * load_error_scale(step)
+		- projected_a.value * load_velocity_scale(step);
+	float error_b = row[1].linear.m128_f32[3] * load_error_scale(step)
+		- projected_b.value * load_velocity_scale(step);
+	float impulse_a = row[0].b.m128_f32[3] * error_a + error_b * operation_float(op, 4);
+	volatile float impulse_b = row[1].b.m128_f32[3] * error_b + error_a * operation_float(op, 4);
+	if (impulse_a > 0.0f)
+	{
+		if (impulse_b > 0.0f)
+		{
+			apply_linear(impulse_a, row, a, b, result);
+			apply_linear(impulse_b, row + 1, a, b, result + 1);
+			return;
+		}
+	}
+	else
+	{
+		float candidate = error_b * row[1].a.m128_f32[3];
+		// The second-row fallback accepts unordered results in retail.
+		if (!(candidate <= 0.0f))
+		{
+			apply_linear(candidate, row + 1, a, b, result + 1);
+			return;
+		}
+	}
+	float candidate = error_a * row[0].a.m128_f32[3];
+	if (candidate > 0.0f) apply_linear(candidate, row, a, b, result);
+}
+
 // @retail 0x31c940
 long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *operations,
 	solver_velocity_31c940 *bodies, float *impulses)
@@ -113,33 +150,23 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				op += sizeof(*header);
 				break;
 			}
-			// Coupled unilateral linear rows; fall back to one active row.
+			// Retail groups up to two coupled normal pairs, then checks directly
+			// for the three-axis friction record. Longer runs redispatch here.
 			case 3:
 			{
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
-				do
 				{
-					// Complete both SIMD projections before the coupled x87 errors.
-					solver_scalar_31c940 projected_a = linear_velocity(row, a, b);
-					solver_scalar_31c940 projected_b = linear_velocity(row + 1, a, b);
-					float error_a = row[0].linear.m128_f32[3] * load_error_scale(step)
-						- projected_a.value * load_velocity_scale(step);
-					float error_b = row[1].linear.m128_f32[3] * load_error_scale(step)
-						- projected_b.value * load_velocity_scale(step);
-					float impulse_a = row[0].b.m128_f32[3] * error_a + error_b * operation_float(op, 4);
-					float impulse_b = row[1].b.m128_f32[3] * error_b + error_a * operation_float(op, 4);
-					if (impulse_a > 0.0f && impulse_b > 0.0f)
-					{
-						apply_linear(impulse_a, row, a, b, result);
-						apply_linear(impulse_b, row + 1, a, b, result + 1);
-					}
-					else if (!(impulse_a > 0.0f) && !(error_b * row[1].a.m128_f32[3] <= 0.0f))
-						apply_linear(error_b * row[1].a.m128_f32[3], row + 1, a, b, result + 1);
-					else if (error_a * row[0].a.m128_f32[3] > 0.0f)
-						apply_linear(error_a * row[0].a.m128_f32[3], row, a, b, result);
+					solve_contact_pair(step, op, row, a, b, result);
 					row += 2; result += 2; op += 8;
-				} while (*op == 3);
-				terms = (__m128 *)row;
+					terms = (__m128 *)row;
+				}
+				if (*op != 3) break;
+				{
+					solve_contact_pair(step, op, row, a, b, result);
+					row += 2; result += 2; op += 8;
+					terms = (__m128 *)row;
+				}
+				if (*op == 8) goto contact_friction;
 				break;
 			}
 			// A single unilateral linear row.
@@ -158,6 +185,7 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 			}
 			// Two tangential rows and a spinning row share one friction limit.
 			case 8:
+			contact_friction:
 			{
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
 				solver_angular_row_31e7b0 *spin = (solver_angular_row_31e7b0 *)(row + 2);

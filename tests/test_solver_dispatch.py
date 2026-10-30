@@ -193,7 +193,7 @@ def float_outputs(data):
     return offsets
 
 
-def compare_case(solver_images, data, precision, context):
+def compare_case(solver_images, data, precision, context, retail_coverage=None):
     retail, compiled, symbols = solver_images
     target = address(symbols, 'solve_operations_31c940')
     compiled_gate = address(symbols, 'g_480c60')
@@ -210,8 +210,13 @@ def compare_case(solver_images, data, precision, context):
             machine.mem_write(terms, struct.pack('<f', value * 0.75))
             return_from_hook(machine)
 
+        hooks = [(CALLBACK, callback)]
+        if uc is retail and retail_coverage is not None:
+            def visit(machine, address_, size_, user):
+                retail_coverage[address_] += 1
+            hooks.extend((va, visit) for va in retail_coverage)
         snapshots.append(execute(uc, entry, data, [STEP, OPS, HEAP, IMPULSES],
-                                 hooks=[(CALLBACK, callback)], precision=precision))
+                                 hooks=hooks, precision=precision))
         callbacks.append(calls)
     assert callbacks[0] == callbacks[1], (context, precision, 'callbacks')
     expected, actual = snapshots
@@ -273,6 +278,63 @@ def mixed_case(seed):
 def test_mixed_streams_and_body_pairs(solver_images, precision):
     for seed in range(96):
         compare_case(solver_images, mixed_case(seed), precision, ('mixed', seed))
+
+
+def contact_group_case(pair_count, seed):
+    """Consecutive normal pairs share bodies and end in three-axis friction."""
+    data = solver_case(3, seed)
+    for start, end in ((0x1000, 0x3000), (0x4000, 0x7000)):
+        data[start:end] = b'\xcd' * (end - start)
+    put(data, STEP + 28, 'i', [1, 2, 4][seed % 3])
+    put(data, OPS, '6I', 0x11801, TERMS, RESULTS, HEAP,
+        HEAP if seed % 7 == 0 else HEAP + 0x80, 12)
+    op, terms, impulse = OPS + 24, TERMS, IMPULSES
+    errors = [(1, 1), (-1, 1), (1, -1), (-1, -1),
+              (math.nan, 1), (1, math.nan), (0, 0), (1e-30, 1)]
+    for index, kind in enumerate([3] * pair_count + [8]):
+        source = solver_case(kind, 2)
+        size, row_kind = OP_LAYOUT[kind]
+        source_op = OPS + 24
+        data[op - HEAP:op - HEAP + size] = source[source_op - HEAP:source_op - HEAP + size]
+        length, count = (96, 2) if kind == 3 else (128, 3)
+        data[terms - HEAP:terms - HEAP + length] = source[TERMS - HEAP:TERMS - HEAP + length]
+        data[impulse - HEAP:impulse - HEAP + count * 4] = source[IMPULSES - HEAP:IMPULSES - HEAP + count * 4]
+        if kind == 3:
+            first, second = errors[(seed + index) % len(errors)]
+            put(data, terms + 12, 'f', first)
+            put(data, terms + 60, 'f', second)
+            put(data, op + 4, 'f', [0, 0.2, -0.2, 1][seed % 4])
+        else:
+            put(data, op + 4, 'I', FRICTION_RESULTS)
+            put(data, op + 12, 'f', [0, 0.02, 1, 100][seed % 4])
+        op += size
+        terms += length
+        impulse += count * 4
+    # A callback after the group observes the advanced term cursor.
+    put(data, terms, 'f', 0.75)
+    put(data, op, '3I', 0x20c0e, CALLBACK, pair_count)
+    put(data, op + 12, 'I', 0x400)
+    return data
+
+
+@pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
+def test_contact_pair_groups_then_friction(solver_images, precision):
+    # Local retail disassembly identifies the two pair entries, their four
+    # outcomes (both, first, second, neither), and the following friction entry.
+    # Coverage is measured only in retail; compiled outputs use compare_case.
+    coverage = dict.fromkeys((0x31c9c6, 0x31cd52, 0x31d1fb,
+                              0x31cadb, 0x31cc2b, 0x31ccb1, 0x31cd39,
+                              0x31ce74, 0x31d0dc, 0x31d15a, 0x31d1e5), 0)
+    for pair_count in range(1, 6):
+        for seed in range(32):
+            before = coverage.copy()
+            compare_case(solver_images, contact_group_case(pair_count, seed),
+                         precision, ('contact group', pair_count, seed), coverage)
+            iterations = [1, 2, 4][seed % 3]
+            assert coverage[0x31c9c6] - before[0x31c9c6] == (pair_count + 1) // 2 * iterations
+            assert coverage[0x31cd52] - before[0x31cd52] == pair_count // 2 * iterations
+            assert coverage[0x31d1fb] - before[0x31d1fb] == iterations
+    assert all(coverage.values()), coverage
 
 
 @pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
