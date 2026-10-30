@@ -1,6 +1,7 @@
 #ifndef SOLVER_DISPATCH_31C940_H
 #define SOLVER_DISPATCH_31C940_H
 #include "solver_rows_31e7b0.h"
+#include "solver_validation_31c540.h"
 
 struct solver_step_31c940
 {
@@ -37,8 +38,6 @@ struct s_angular_cursor_31c520 : s_angular_term_31c520
 	s_angular_cursor_31c520 *offset(long index);
 };
 
-extern unsigned char g_480c60;
-void __cdecl function_31c7d0();
 long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *operations,
 	solver_velocity_31c940 *bodies, float *impulses);
 

@@ -3,8 +3,6 @@
 #include "solver_dispatch_31c940.h"
 #include <math.h>
 
-unsigned char g_480c60;
-
 static __forceinline float sum_three_31c940(__m128 const &v)
 {
 	__m128 xy = _mm_add_ss(_mm_shuffle_ps(v, v, 0x55), v);
