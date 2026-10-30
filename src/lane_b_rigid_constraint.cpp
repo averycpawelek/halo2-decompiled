@@ -1,4 +1,5 @@
 // @flags /O2 /Ob1 /GL- /GX
+// Source-file claim: reconcile the shared reference teardown at 0x31b9e0.
 #include "lane_b_constraint_leaves.h"
 #include "lane_b_constraint_entities.h"
 bool __cdecl function_279740(long value);
