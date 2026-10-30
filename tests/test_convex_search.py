@@ -119,7 +119,7 @@ def test_penetration_fallback_against_retail(solver_images,precision):
 def test_closest_search_against_retail(solver_images,precision):
     retail,compiled,symbols=solver_images
     entry=address(symbols,'class_3048a0::function_3048a0'); pen=address(symbols,'function_30a6b0')
-    tetra=address(symbols,'function_303540'); zero=address(symbols,'g_4801e0')
+    tetra=address(symbols,'convex_search_tetrahedron_boundary'); zero=address(symbols,'g_4801e0')
     visited=set()
     for seed in range(320):
         rng,data,put=base_case(seed+10000)

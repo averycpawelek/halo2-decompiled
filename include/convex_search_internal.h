@@ -21,8 +21,9 @@ struct closest_points_308590
 	float distance_squared;
 };
 int __cdecl function_308590(__m128 const *, __m128 const *, __m128 const *, __m128 const *, closest_points_308590 *);
-// Owned by PR #637. The temporary declaration uses the ordinary convention.
-int __cdecl function_303540(__m128 const *point, __m128 const *tetrahedron, float orientation);
+// Pending integration with upstream's file-local 0x303540 implementation.
+// Preserve the reconstruction's explicit ordinary-convention test boundary.
+int __cdecl convex_search_tetrahedron_boundary(__m128 const *point, __m128 const *tetrahedron, float orientation);
 extern __m128 g_4801e0;
 static __declspec(align(16)) const unsigned long search_sign[4] = {0x80000000,0x80000000,0x80000000,0x80000000};
 static __declspec(align(16)) const unsigned long search_magnitude[4] = {0x7fffffff,0x7fffffff,0x7fffffff,0x7fffffff};
@@ -120,7 +121,7 @@ __forceinline int search_reduce(search_features_303dd0 &s)
 			bool second = s.count_b == 4;
 			__m128 *corners = second ? s.b : s.a;
 			__m128 *point = second ? s.a : s.b;
-			int index = function_303540(point,corners,second ? -1.0f : 1.0f);
+			int index = convex_search_tetrahedron_boundary(point,corners,second ? -1.0f : 1.0f);
 			if (index < 0) return 1;
 			if (second) { --s.count_b; s.source_b[index] = s.source_b[3]; } else --s.count_a;
 			corners[index] = corners[3];
