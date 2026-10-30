@@ -4,6 +4,7 @@
 // child, with the wrapping side replaced by its child at the same key and
 // placement; the kind used with the two bodies the other way round turns what
 // it finds back.
+// Construction resolves the child pair once; later queries reuse that agent.
 #include "lane_b_wrapper_agents.h"
 
 static __declspec(align(16)) const unsigned long g_4124a0[4] = {0x80000000, 0x80000000, 0x80000000, 0x80000000};
