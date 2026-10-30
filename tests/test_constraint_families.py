@@ -161,14 +161,25 @@ def test_modifier_installation_against_retail(solver_images, va, name):
 
 @pytest.mark.parametrize('va,name', [(0x315620, 'contact_sizes_3155f0::build'),
                                     (0x315740, 'contact_sizes_315720::build')])
-def test_contact_modifier_builders_against_retail(solver_images, va, name):
+@pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
+def test_contact_modifier_builders_against_retail(solver_images, va, name, precision):
     retail, compiled, symbols = solver_images
-    for seed in range(64):
+    for seed in range(128 if va == 0x315620 else 64):
         data, _ = case(0x31f160, seed)
         put(data, JOINT + 12, 'II', ENTITY_A, ENTITY_B)
         put(data, JOINT + 0x38, 'I', seed % 5)
         put(data, JOINT + 0x40, '2f', [0, 0.5, 2][seed % 3], [-1, 0, 1, 3][seed % 4])
         put(data, JOINT + 0x100, '4f', 1.5, -2.25, 0.25, 4)
+        if seed >= 64:
+            # Include signed zeros, subnormals, overflow and both kinds of NaN.
+            # Odd seeds have the property; use seed // 2 so they cover every scale.
+            scales = [0, 0x80000000, 1, 0x3f000001, 0x7f7fffff,
+                      0x7f800000, 0x7fc12345, 0x7f812345]
+            components = [0x3f800001, 0xbf800001, 1, 0x80000001,
+                          0x7f7fffff, 0xff800000, 0x7fc54321, 0x80000000]
+            put(data, JOINT + 0x44, 'I', scales[(seed // 2) % len(scales)])
+            put(data, JOINT + 0x100, '4I',
+                *(components[(seed // 16 + i) % len(components)] for i in range(4)))
         results = []
         for uc, original in [(retail, True), (compiled, False)]:
             calls = []
@@ -191,7 +202,8 @@ def test_contact_modifier_builders_against_retail(solver_images, va, name):
 
             hooks = [(0x31bdf0 if original else address(symbols, 'lane_b_contact_constraint_prefix::build'), contact_build),
                      (0x1cf380 if original else address(symbols, 'havok_entity_property_2003_get'), property_get)]
-            result = bytearray(execute(uc, va if original else address(symbols, name), data, [PAIR, OUTPUT], JOINT, hooks))
+            result = bytearray(execute(uc, va if original else address(symbols, name), data,
+                                       [PAIR, OUTPUT], JOINT, hooks, precision=precision))
             if not original:
                 replacements = {address(symbols, n): r for r, n in [(0x315280, 'lane_a_scale_masses'),
                                (0x3152f0, 'lane_a_restore_masses'), (0x315440, 'add_velocity_bias_315440')]}
@@ -200,7 +212,7 @@ def test_contact_modifier_builders_against_retail(solver_images, va, name):
                     if word in replacements:
                         struct.pack_into('<I', result, offset, replacements[word])
             results.append((result, calls))
-        assert results[0] == results[1], (name, seed)
+        assert results[0] == results[1], (name, seed, precision)
 
 
 def test_contact_array_destruction_against_retail(solver_images):

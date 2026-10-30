@@ -4,6 +4,7 @@
 #include "lane_a_constraints.h"
 #include "solver_rows_31e7b0.h"
 #include <string.h>
+#include "stack_array_30d740.h"
 
 struct solver_step_31c940;
 struct solver_velocity_31c940;
@@ -61,7 +62,8 @@ reset_workspace:
 		if (terms >= end)
 		{
 			allocation_size = needed_end - initial;
-			allocated = (char *)g_memory_2d88a0->allocate_stack((allocation_size + 15) & ~15);
+			// This helper caches the available count before changing the cursor.
+			allocated = (char *)stack_allocate_30d740((allocation_size + 15) & ~15);
 			end = allocated + allocation_size;
 			base = allocated;
 			goto reset_workspace;
@@ -70,7 +72,7 @@ reset_workspace:
 		{
 			long spill = 2 * sizes->maximum_term_bytes + terms + sizes->term_bytes - end;
 			allocation_size = spill + result_bytes + sizes->op_bytes + 4;
-			allocated = (char *)g_memory_2d88a0->allocate_stack((allocation_size + 15) & ~15);
+			allocated = (char *)stack_allocate_30d740((allocation_size + 15) & ~15);
 			term_limit = end - sizes->maximum_term_bytes;
 			overflow = allocated;
 			end = allocated + allocation_size;
@@ -79,7 +81,7 @@ reset_workspace:
 		else
 		{
 			allocation_size = result_bytes + sizes->op_bytes + 4;
-			allocated = (char *)g_memory_2d88a0->allocate_stack((allocation_size + 15) & ~15);
+			allocated = (char *)stack_allocate_30d740((allocation_size + 15) & ~15);
 			end = allocated + allocation_size;
 			results = allocated;
 		}

@@ -5,8 +5,8 @@ long __cdecl havok_entity_property_2003_get(hkEntity const *);
 
 // Append the velocity-bias callback only when contact building emitted rows
 // beyond the per-contact linear rows, and the body has the velocity property.
-// Score 57: register allocation and the factor's stack copies differ. Retail
-// reloads the factor four times; this build retains it in the x87 stack.
+// Reload the saved scalar for each component and finish the velocity stores
+// before publishing the term pointer, matching the retail access order.
 // @retail 0x315620
 void contact_sizes_3155f0::build(lane_a_solver_input const *input, lane_a_solver_output *output)
 {
@@ -19,9 +19,9 @@ void contact_sizes_3155f0::build(lane_a_solver_input const *input, lane_a_solver
 		long contact_bytes = points.size * 0x30;
 		if ((unsigned char *)cursors->term - start != contact_bytes)
 		{
-			velocity_record_315440 *record = (velocity_record_315440 *)function_320290(
+			velocity_record_315440 volatile *record = (velocity_record_315440 *)function_320290(
 				(solver_callback_320290)add_velocity_bias_315440, 0x20, input, cursors);
-			float scale = scale_b;
+			volatile float scale = scale_b;
 			record->velocity[0] = scale * velocity[0];
 			record->velocity[1] = scale * velocity[1];
 			record->velocity[2] = scale * velocity[2];

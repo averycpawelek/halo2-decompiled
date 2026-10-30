@@ -3,31 +3,34 @@
 #include "solver_dispatch_31c940.h"
 #include <math.h>
 
-static __forceinline float sum_three_31c940(__m128 const &v)
+// Keep the SSE reduction in a scalar result object before x87 arithmetic.
+struct solver_scalar_31c940 { float value; };
+
+static __forceinline solver_scalar_31c940 sum_three_31c940(__m128 const &v)
 {
 	__m128 xy = _mm_add_ss(_mm_shuffle_ps(v, v, 0x55), v);
 	__m128 xyz = _mm_add_ss(_mm_shuffle_ps(v, v, 0xaa), xy);
-	float result;
-	_mm_store_ss(&result, xyz);
+	solver_scalar_31c940 result;
+	_mm_store_ss(&result.value, xyz);
 	return result;
 }
 
 static __forceinline float angular_velocity(solver_angular_row_31e7b0 const *row,
-	solver_velocity_31c940 const *a, solver_velocity_31c940 const *b)
+	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b)
 {
-	return sum_three_31c940(_mm_add_ps(_mm_mul_ps(a->angular, row->a), _mm_mul_ps(b->angular, row->b)));
+	return sum_three_31c940(_mm_add_ps(_mm_mul_ps(a->angular, row->a), _mm_mul_ps(b->angular, row->b))).value;
 }
 
 static __forceinline float linear_velocity(solver_linear_row_31e7b0 const *row,
-	solver_velocity_31c940 const *a, solver_velocity_31c940 const *b)
+	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b)
 {
 	__m128 relative = _mm_sub_ps(a->linear, b->linear);
 	__m128 angular = _mm_add_ps(_mm_mul_ps(a->angular, row->a), _mm_mul_ps(b->angular, row->b));
-	return sum_three_31c940(_mm_add_ps(angular, _mm_mul_ps(relative, row->linear)));
+	return sum_three_31c940(_mm_add_ps(angular, _mm_mul_ps(relative, row->linear))).value;
 }
 
-static __forceinline void apply_angular(float impulse, solver_angular_row_31e7b0 const *row,
-	solver_velocity_31c940 *a, solver_velocity_31c940 *b, float *result)
+static __forceinline void apply_angular(float const volatile &impulse, solver_angular_row_31e7b0 const *row,
+	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b, float *result)
 {
 	__m128 scalar = _mm_set_ss(impulse);
 	__m128 change_a = _mm_mul_ps(_mm_shuffle_ps(scalar, scalar, 0), a->inverse_inertia);
@@ -38,9 +41,12 @@ static __forceinline void apply_angular(float impulse, solver_angular_row_31e7b0
 }
 
 static __forceinline void apply_linear(float impulse, solver_linear_row_31e7b0 const *row,
-	solver_velocity_31c940 *a, solver_velocity_31c940 *b, float *result)
+	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b, float *result)
 {
-	__m128 scalar = _mm_set_ss(impulse);
+	// SSE consumes a rounded float while result accumulation retains the x87
+	// value. Passing the impulse by reference would round both paths early.
+	volatile float rounded_impulse = impulse;
+	__m128 scalar = _mm_set_ss(rounded_impulse);
 	__m128 change_a = _mm_mul_ps(_mm_shuffle_ps(scalar, scalar, 0), a->inverse_inertia);
 	__m128 change_b = _mm_mul_ps(_mm_shuffle_ps(scalar, scalar, 0), b->inverse_inertia);
 	__m128 linear_a = _mm_mul_ps(_mm_shuffle_ps(change_a, change_a, 0xff), row->linear);
@@ -72,7 +78,8 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 		float saved_velocity = step->velocity_scale;
 		unsigned char *op = operations;
 		__m128 *terms;
-		solver_velocity_31c940 *a, *b;
+		solver_velocity_31c940 *a;
+		solver_velocity_31c940 *volatile b;
 		float *result = impulses;
 		goto read_header;
 		for (;;)

@@ -271,8 +271,17 @@ def mixed_case(seed):
 
 @pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
 def test_mixed_streams_and_body_pairs(solver_images, precision):
-    for seed in range(32):
+    for seed in range(96):
         compare_case(solver_images, mixed_case(seed), precision, ('mixed', seed))
+
+
+@pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
+def test_shared_body_in_both_header_slots(solver_images, precision):
+    for kind in OP_LAYOUT:
+        for seed in range(8):
+            data = solver_case(kind, seed)
+            put(data, OPS + 16, 'I', HEAP)
+            compare_case(solver_images, data, precision, ('shared body', kind, seed))
 
 
 @pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
