@@ -30,10 +30,14 @@ static __forceinline solver_scalar_31c940 linear_velocity(solver_linear_row_31e7
 	return sum_three_31c940(_mm_add_ps(angular, _mm_mul_ps(relative, row->linear)));
 }
 
-static __forceinline void apply_angular(float const volatile &impulse, solver_angular_row_31e7b0 const *row,
-	solver_velocity_31c940 *a, solver_velocity_31c940 *b, float *result)
+static __forceinline void apply_angular(float const &impulse, solver_angular_row_31e7b0 const *row,
+	solver_velocity_31c940 *a, solver_velocity_31c940 *const volatile &b, float *result)
 {
-	__m128 scalar = _mm_set_ss(impulse);
+	// Keep the x87 impulse for accumulation; only the SIMD copy rounds here.
+	float rounded_impulse;
+	float volatile &rounded_store = rounded_impulse;
+	rounded_store = impulse;
+	__m128 scalar = _mm_load_ss(&rounded_impulse);
 	__m128 change_a = _mm_mul_ps(_mm_shuffle_ps(scalar, scalar, 0), a->inverse_inertia);
 	__m128 change_b = _mm_mul_ps(_mm_shuffle_ps(scalar, scalar, 0), b->inverse_inertia);
 	a->angular = _mm_add_ps(a->angular, _mm_mul_ps(change_a, row->a));
@@ -208,7 +212,9 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				}
 				apply_linear(impulse_a, row, a, b, result);
 				apply_linear(impulse_b, row + 1, a, b, result + 1);
-				apply_angular(impulse_spin * operation_float(op, 20), spin, a, b, result + 2);
+				// This path rounds the scaled spin impulse before both consumers.
+				volatile float rounded_spin = impulse_spin * operation_float(op, 20);
+				apply_angular((float)rounded_spin, spin, a, b, result + 2);
 				terms += 8; result += 3; op += 24;
 				break;
 			}

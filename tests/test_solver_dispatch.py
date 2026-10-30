@@ -232,6 +232,83 @@ def compare_case(solver_images, data, precision, context, retail_coverage=None):
         close = math.isclose(rf, cf, rel_tol=2e-5, abs_tol=2e-6)
         assert offset in outputs and (close or math.isnan(rf) and math.isnan(cf)), (
             context, precision, hex(offset), rf, cf)
+    return snapshots
+
+
+@pytest.mark.parametrize('kind', [4, 9, 10, 12])
+@pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
+def test_angular_impulse_retains_x87_remainder(solver_images, kind, precision):
+    # SIMD consumes a float copy of the impulse, while accumulation keeps the
+    # x87 value. Cancellation makes premature rounding observable without
+    # changing the suite's existing tolerances.
+    for exponent in (4, 12, 20, 28):
+        for sign in (-1, 1):
+            for axis in range(3):
+                for active_body in range(2):
+                    data = solver_case(kind, 2)
+                    large, small = sign * 2.0 ** exponent, sign * 2.0 ** (exponent - 25)
+                    put(data, STEP, '7fi', 0, 1, 1, 1, 60, 0, 0, 1)
+                    size, row_kind = OP_LAYOUT[kind]
+                    put(data, OPS + 24, 'I', kind | size << 8 | row_kind << 16)
+                    if kind == 4:
+                        put(data, OPS + 28, '2f', abs(large) * 2, -abs(large) * 2)
+                    elif kind == 9:
+                        put(data, OPS + 28, 'f', abs(large) * 2)
+                    elif kind == 10:
+                        put(data, OPS + 28, '3f', 0, 0, 1)
+                    put(data, OPS + 24 + size, 'I', 0x400)
+                    alias = (axis + exponent // 4) % 2
+                    put(data, OPS + 16, 'I', HEAP if alias else HEAP + 0x80)
+                    for body in (HEAP, HEAP + 0x80):
+                        for offset in (0x10, 0x20, 0x30, 0x40, 0x50):
+                            put(data, body + offset, '4f', 0, 0, 0, 0)
+                        put(data, body + 0x30 + axis * 4, 'f', 0.25 if axis % 2 else 0)
+                    put(data, TERMS, '8f', 0, 0, 0, 1, 0, 0, 0, large)
+                    put(data, TERMS + active_body * 16 + axis * 4, 'f', 1)
+                    body = HEAP if alias or not active_body else HEAP + 0x80
+                    put(data, body + 0x20 + axis * 4, 'f', -small)
+                    put(data, IMPULSES, 'f', -large)
+                    context = ('angular cancellation', kind, exponent, sign, axis, active_body)
+                    snapshots = compare_case(solver_images, data, precision, context)
+                    expected = small if precision != 0x7f else 0.0
+                    # The positive limit branch reloads its error from a float
+                    # spill before multiplying by inverse mass in retail.
+                    if kind == 10 and sign > 0:
+                        expected = 0.0
+                    for heap, _ in snapshots:
+                        actual, = struct.unpack_from('<f', heap, IMPULSES - HEAP)
+                        assert actual == expected, (context, precision, actual, expected)
+
+
+@pytest.mark.parametrize('precision', [0x7f, 0x27f, 0x37f])
+def test_spin_impulse_rounds_after_scale(solver_images, precision):
+    # Spin friction has a distinct boundary: its scaled impulse is rounded
+    # before both the SIMD update and accumulation. Keeping it extended would
+    # incorrectly leave a remainder in these exact-cancellation cases.
+    for exponent in (12, 16, 20):
+        for sign in (-1, 1):
+            for axis in range(3):
+                for alias in (False, True):
+                    data = solver_case(8, 2)
+                    put(data, STEP, '7fi', 0, 1, 1, 1, 60, 0, 0, 1)
+                    put(data, OPS + 16, 'I', HEAP if alias else HEAP + 0x80)
+                    put(data, OPS + 24, 'IIffIf',
+                        0x61808, FRICTION_RESULTS, 0, 1e9, 12, 1 + 2.0 ** -exponent)
+                    put(data, OPS + 48, 'I', 0x400)
+                    for body in (HEAP, HEAP + 0x80):
+                        for offset in (0x10, 0x20, 0x30, 0x40, 0x50):
+                            put(data, body + offset, '4f', 0, 0, 0, 0)
+                        put(data, body + 0x30 + axis * 4, 'f', 0.25)
+                    put(data, TERMS, '32f', *([0] * 32))
+                    put(data, TERMS + 0x60 + axis * 4, 'f', 1)
+                    put(data, TERMS + 0x6c, 'f', 1)
+                    put(data, TERMS + 0x7c, 'f', sign * (2.0 ** exponent + 1))
+                    put(data, IMPULSES, '3f', 0, 0, -sign * (2.0 ** exponent + 2))
+                    context = ('spin rounding', exponent, sign, axis, alias)
+                    snapshots = compare_case(solver_images, data, precision, context)
+                    for heap, _ in snapshots:
+                        actual, = struct.unpack_from('<f', heap, IMPULSES - HEAP + 8)
+                        assert actual == 0.0, (context, precision, actual)
 
 
 def mixed_case(seed):
