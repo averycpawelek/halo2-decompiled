@@ -21,12 +21,13 @@ static __forceinline float angular_velocity(solver_angular_row_31e7b0 const *row
 	return sum_three_31c940(_mm_add_ps(_mm_mul_ps(a->angular, row->a), _mm_mul_ps(b->angular, row->b))).value;
 }
 
-static __forceinline float linear_velocity(solver_linear_row_31e7b0 const *row,
+// Keep paired projections as scalar objects until both rows are ready.
+static __forceinline solver_scalar_31c940 linear_velocity(solver_linear_row_31e7b0 const *row,
 	solver_velocity_31c940 * const volatile &a, solver_velocity_31c940 * const volatile &b)
 {
 	__m128 relative = _mm_sub_ps(a->linear, b->linear);
 	__m128 angular = _mm_add_ps(_mm_mul_ps(a->angular, row->a), _mm_mul_ps(b->angular, row->b));
-	return sum_three_31c940(_mm_add_ps(angular, _mm_mul_ps(relative, row->linear))).value;
+	return sum_three_31c940(_mm_add_ps(angular, _mm_mul_ps(relative, row->linear)));
 }
 
 static __forceinline void apply_angular(float const volatile &impulse, solver_angular_row_31e7b0 const *row,
@@ -118,10 +119,13 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
 				do
 				{
+					// Complete both SIMD projections before the coupled x87 errors.
+					solver_scalar_31c940 projected_a = linear_velocity(row, a, b);
+					solver_scalar_31c940 projected_b = linear_velocity(row + 1, a, b);
 					float error_a = row[0].linear.m128_f32[3] * load_error_scale(step)
-						- linear_velocity(row, a, b) * load_velocity_scale(step);
+						- projected_a.value * load_velocity_scale(step);
 					float error_b = row[1].linear.m128_f32[3] * load_error_scale(step)
-						- linear_velocity(row + 1, a, b) * load_velocity_scale(step);
+						- projected_b.value * load_velocity_scale(step);
 					float impulse_a = row[0].b.m128_f32[3] * error_a + error_b * operation_float(op, 4);
 					float impulse_b = row[1].b.m128_f32[3] * error_b + error_a * operation_float(op, 4);
 					if (impulse_a > 0.0f && impulse_b > 0.0f)
@@ -145,7 +149,7 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				do
 				{
 					float error = row->linear.m128_f32[3] * load_error_scale(step)
-						- linear_velocity(row, a, b) * load_velocity_scale(step);
+						- linear_velocity(row, a, b).value * load_velocity_scale(step);
 					if (error > 0.0f) apply_linear(error * row->a.m128_f32[3], row, a, b, result);
 					++row; ++result; op += 4;
 				} while (*op == 2);
@@ -157,8 +161,10 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 			{
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
 				solver_angular_row_31e7b0 *spin = (solver_angular_row_31e7b0 *)(row + 2);
-				float error_a = row[0].linear.m128_f32[3] * load_friction_scale(step) - linear_velocity(row, a, b) * load_velocity_scale(step);
-				float error_b = row[1].linear.m128_f32[3] * load_friction_scale(step) - linear_velocity(row + 1, a, b) * load_velocity_scale(step);
+				solver_scalar_31c940 projected_a = linear_velocity(row, a, b);
+				solver_scalar_31c940 projected_b = linear_velocity(row + 1, a, b);
+				float error_a = row[0].linear.m128_f32[3] * load_friction_scale(step) - projected_a.value * load_velocity_scale(step);
+				float error_b = row[1].linear.m128_f32[3] * load_friction_scale(step) - projected_b.value * load_velocity_scale(step);
 				float impulse_a = row[0].b.m128_f32[3] * error_a + error_b * operation_float(op, 8);
 				float impulse_b = row[1].b.m128_f32[3] * error_b + error_a * operation_float(op, 8);
 				float impulse_spin = (spin->b.m128_f32[3] * load_friction_scale(step) - angular_velocity(spin, a, b) * load_velocity_scale(step)) * spin->a.m128_f32[3];
@@ -182,8 +188,10 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 			case 7:
 			{
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
-				float error_a = row[0].linear.m128_f32[3] * load_friction_scale(step) - linear_velocity(row, a, b) * load_velocity_scale(step);
-				float error_b = row[1].linear.m128_f32[3] * load_friction_scale(step) - linear_velocity(row + 1, a, b) * load_velocity_scale(step);
+				solver_scalar_31c940 projected_a = linear_velocity(row, a, b);
+				solver_scalar_31c940 projected_b = linear_velocity(row + 1, a, b);
+				float error_a = row[0].linear.m128_f32[3] * load_friction_scale(step) - projected_a.value * load_velocity_scale(step);
+				float error_b = row[1].linear.m128_f32[3] * load_friction_scale(step) - projected_b.value * load_velocity_scale(step);
 				float impulse_a = row[0].b.m128_f32[3] * error_a + error_b * operation_float(op, 8);
 				float impulse_b = row[1].b.m128_f32[3] * error_b + error_a * operation_float(op, 8);
 				float norm = impulse_a * impulse_a + impulse_b * impulse_b;
@@ -272,7 +280,7 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
 				do
 				{
-					float impulse = row->a.m128_f32[3] * (row->linear.m128_f32[3] * load_error_scale(step) - linear_velocity(row, a, b) * load_velocity_scale(step));
+					float impulse = row->a.m128_f32[3] * (row->linear.m128_f32[3] * load_error_scale(step) - linear_velocity(row, a, b).value * load_velocity_scale(step));
 					apply_linear(impulse, row, a, b, result);
 					++row; ++result; op += 4;
 				} while (*op == 13);
@@ -285,7 +293,7 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
 				do
 				{
-					float impulse = (row->linear.m128_f32[3] * load_friction_scale(step) - linear_velocity(row, a, b) * load_velocity_scale(step)) * row->a.m128_f32[3];
+					float impulse = (row->linear.m128_f32[3] * load_friction_scale(step) - linear_velocity(row, a, b).value * load_velocity_scale(step)) * row->a.m128_f32[3];
 					float magnitude = (float)fabs(impulse);
 					if (magnitude > operation_float(op, 4))
 					{
@@ -304,7 +312,7 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
 				do
 				{
-					float velocity = linear_velocity(row, a, b) * load_velocity_scale(step);
+					float velocity = linear_velocity(row, a, b).value * load_velocity_scale(step);
 					float low = (row->linear.m128_f32[3] - operation_float(op, 4)) * load_error_scale(step) - velocity;
 					if (low > 0.0f) apply_linear(low * row->a.m128_f32[3], row, a, b, result);
 					float high = (row->linear.m128_f32[3] - operation_float(op, 8)) * load_error_scale(step) - velocity;
@@ -320,7 +328,7 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
 				do
 				{
-					float impulse = (row->linear.m128_f32[3] - linear_velocity(row, a, b)) * row->a.m128_f32[3] * load_error_scale(step);
+					float impulse = (row->linear.m128_f32[3] - linear_velocity(row, a, b).value) * row->a.m128_f32[3] * load_error_scale(step);
 					if (impulse > operation_float(op, 4)) impulse *= operation_float(op, 4) / impulse;
 					else if (impulse < operation_float(op, 8)) impulse *= operation_float(op, 8) / impulse;
 					apply_linear(impulse, row, a, b, result);
@@ -392,8 +400,8 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				do
 				{
 					solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
-					float velocity_a = linear_velocity(row, a, b);
-					float velocity_b = linear_velocity(row + 1, a, b);
+					float velocity_a = linear_velocity(row, a, b).value;
+					float velocity_b = linear_velocity(row + 1, a, b).value;
 					row[0].linear.m128_f32[3] -= velocity_a;
 					row[1].linear.m128_f32[3] -= velocity_b;
 					terms += 6;
@@ -406,8 +414,8 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				do
 				{
 					solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
-					float velocity_a = linear_velocity(row, a, b);
-					float velocity_b = linear_velocity(row + 1, a, b);
+					float velocity_a = linear_velocity(row, a, b).value;
+					float velocity_b = linear_velocity(row + 1, a, b).value;
 					row[0].linear.m128_f32[3] -= velocity_a;
 					row[1].linear.m128_f32[3] -= velocity_b;
 					terms += 6;
@@ -423,7 +431,7 @@ long __cdecl solve_operations_31c940(solver_step_31c940 *step, unsigned char *op
 				solver_linear_row_31e7b0 *row = (solver_linear_row_31e7b0 *)terms;
 				do
 				{
-					row->linear.m128_f32[3] -= linear_velocity(row, a, b);
+					row->linear.m128_f32[3] -= linear_velocity(row, a, b).value;
 					++row; op += op[1];
 				} while (op[2] == 3);
 				terms = (__m128 *)row;
