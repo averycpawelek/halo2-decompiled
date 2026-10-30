@@ -7,6 +7,7 @@
 // takes back when it no longer does) gets up to three: when the segment lies
 // outside an edge at both ends, the edges are taken as segments of a capsule.
 // The queries are marked in the timing stream.
+// The cached and uncached queries share the same endpoint and edge tests.
 #include "pair_agents_2eab70.h"
 #include "timer_mark_2ebc80.h"
 #include "growable_array_2d91d0.h"
